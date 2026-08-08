@@ -218,43 +218,28 @@ function isSectionAllowed(target){
 
 
 
-appState.updateNavPermissions=function(){
+appState.updateNavPermissions = function(){
 
+    navItems.forEach(item => {
 
-navItems.forEach(item=>{
+        const target =
+            item.dataset.target;
 
+        if(!target){
+            return;
+        }
 
-const target =
-item.dataset.target;
+        // TEMPORARY TEST:
+        // Allow all navigation buttons
+        const allowed = true;
 
+        item.classList.remove("disabled");
 
-if(!target)return;
+        if(item.tagName === "BUTTON"){
+            item.disabled = false;
+        }
 
-
-
-const allowed =
-isSectionAllowed(target);
-
-
-
-item.classList.toggle(
-"disabled",
-!allowed
-);
-
-
-
-if(item.tagName==="BUTTON"){
-
-item.disabled =
-!allowed;
-
-}
-
-
-
-});
-
+    });
 
 };
 
