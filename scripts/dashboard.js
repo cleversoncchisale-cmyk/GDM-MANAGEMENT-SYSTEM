@@ -220,11 +220,13 @@ function isSectionAllowed(target){
         ],
 
         "Member": [
-            "dashboardSection",
-            "ministriesSection",
-            "membersSection",
-            "activitySection"
-        ],
+    "dashboardSection",
+    "ministriesSection",
+    "membersSection",
+    "documentsSection",
+    "reportsSection",
+    "activitySection"
+],
 
         "Viewer": [
             "dashboardSection",
