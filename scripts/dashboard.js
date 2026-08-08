@@ -1450,55 +1450,24 @@ appState.renderDocuments();
 
 if(navButtons.length){
 
+    navButtons.forEach(button=>{
 
-navButtons.forEach(button=>{
+        button.addEventListener(
+            "click",
+            ()=>{
 
+                const target =
+                    button.dataset.target;
 
-button.addEventListener(
-"click",
-()=>{
+                if(!target)
+                    return;
 
+                showSection(target);
 
-const target =
-button.dataset.target;
-
-
-
-if(!target)
-return;
-
-
-
-
-if(!isSectionAllowed(target)){
-
-    if(
-        typeof appState.showToast==="function"
-    ){
-
-        appState.showToast(
-            "Access denied",
-            "You cannot access this section."
+            }
         );
 
-    }
-
-    return;
-
-}
-
-showSection(target);
-
-
-
-}
-
-
-);
-
-
-});
-
+    });
 
 }
 
