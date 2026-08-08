@@ -271,8 +271,42 @@ appState.updateNavPermissions = function(){
 
     });
 
-};
 
+    // =================================================
+    // DOCUMENT UPLOAD PERMISSION
+    // =================================================
+
+    const uploadDocumentBtn =
+        document.getElementById(
+            "uploadDocumentBtn"
+        );
+
+
+    const role =
+        String(
+            appState.currentUser?.role ||
+            "Viewer"
+        ).trim();
+
+
+    const canUploadDocument =
+        [
+            "Super Admin",
+            "Admin",
+            "Member"
+        ].includes(role);
+
+
+    if(uploadDocumentBtn){
+
+        uploadDocumentBtn.style.display =
+            canUploadDocument
+            ? ""
+            : "none";
+
+    }
+
+};
 
 
 
