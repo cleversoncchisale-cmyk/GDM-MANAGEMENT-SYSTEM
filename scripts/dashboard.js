@@ -1472,7 +1472,56 @@ appState.renderDocuments();
 
 
 
+// =====================================================
+// DOCUMENT UPLOAD EVENTS
+// =====================================================
 
+const uploadDocumentBtn =
+    document.getElementById("uploadDocumentBtn");
+
+const documentFileInput =
+    document.getElementById("documentFileInput");
+
+
+if(uploadDocumentBtn && documentFileInput){
+
+    uploadDocumentBtn.addEventListener(
+        "click",
+        ()=>{
+            documentFileInput.click();
+        }
+    );
+
+
+    documentFileInput.addEventListener(
+        "change",
+        async ()=>{
+            
+            const file =
+                documentFileInput.files?.[0];
+
+            if(!file)
+                return;
+
+
+            if(
+                typeof appState.uploadDocumentFile ===
+                "function"
+            ){
+
+                await appState.uploadDocumentFile(
+                    file
+                );
+
+            }
+
+
+            documentFileInput.value = "";
+
+        }
+    );
+
+}
 // =====================================================
 // NAVIGATION EVENTS
 // =====================================================
