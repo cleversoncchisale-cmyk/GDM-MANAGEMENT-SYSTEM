@@ -1401,37 +1401,43 @@ appState.renderMinistries();
 
 
 
-
 // =====================================================
 // UPLOAD DOCUMENT
 // =====================================================
 
-appState.uploadDocumentFile =
-async function(file){
+appState.uploadDocumentFile = async function(file){
 
     if(!file)
         return;
 
 
-    if(
-        !appState.storage ||
-        !appState.db
-    ){
-
-        console.error(
-            "Firebase Storage or Firestore is not available."
-        );
-
-        return;
-
-    }
-
-
     try{
 
-        // -----------------------------
-        // Create unique storage path
-        // -----------------------------
+        // =============================================
+        // CHECK FIREBASE SERVICES
+        // =============================================
+
+        if(!appState.storage){
+
+            throw new Error(
+                "Firebase Storage is not available."
+            );
+
+        }
+
+
+        if(!appState.db){
+
+            throw new Error(
+                "Firestore is not available."
+            );
+
+        }
+
+
+        // =============================================
+        // SAFE FILE NAME
+        // =============================================
 
         const safeName =
             file.name.replace(
@@ -1439,32 +1445,60 @@ async function(file){
                 "_"
             );
 
+
+        // =============================================
+        // STORAGE PATH
+        // =============================================
+
         const storagePath =
             `documents/${Date.now()}_${safeName}`;
 
 
-        // -----------------------------
-        // Upload file to Firebase Storage
-        // -----------------------------
+        console.log(
+            "Uploading file:",
+            storagePath
+        );
+
+
+        // =============================================
+        // CREATE STORAGE REFERENCE
+        // =============================================
 
         const storageRef =
-            appState.storage.ref(storagePath);
+            appState.storage.ref(
+                storagePath
+            );
 
+
+        // =============================================
+        // UPLOAD ACTUAL FILE
+        // =============================================
 
         await storageRef.put(file);
 
 
-        // -----------------------------
-        // Get downloadable URL
-        // -----------------------------
+        console.log(
+            "File uploaded to Firebase Storage."
+        );
+
+
+        // =============================================
+        // GET DOWNLOAD URL
+        // =============================================
 
         const downloadURL =
             await storageRef.getDownloadURL();
 
 
-        // -----------------------------
-        // Determine file type
-        // -----------------------------
+        console.log(
+            "Download URL:",
+            downloadURL
+        );
+
+
+        // =============================================
+        // FILE TYPE
+        // =============================================
 
         const extension =
             file.name
@@ -1492,9 +1526,9 @@ async function(file){
             extension.toUpperCase();
 
 
-        // -----------------------------
-        // Determine file size
-        // -----------------------------
+        // =============================================
+        // FILE SIZE
+        // =============================================
 
         const size =
             file.size < 1024 * 1024
@@ -1513,9 +1547,9 @@ async function(file){
             ).toFixed(1)} MB`;
 
 
-        // -----------------------------
-        // Create document record
-        // -----------------------------
+        // =============================================
+        // DOCUMENT ENTRY
+        // =============================================
 
         const entry = {
 
@@ -1545,9 +1579,15 @@ async function(file){
         };
 
 
-        // -----------------------------
-        // Save document metadata
-        // -----------------------------
+        console.log(
+            "Saving document metadata:",
+            entry
+        );
+
+
+        // =============================================
+        // SAVE TO FIRESTORE
+        // =============================================
 
         if(
             typeof appState.saveDocumentEntry ===
@@ -1561,16 +1601,31 @@ async function(file){
         }
 
 
-        // -----------------------------
-        // Refresh documents
-        // -----------------------------
+        // =============================================
+        // UPDATE LOCAL STATE
+        // =============================================
+
+        if(!appState.documents){
+
+            appState.documents = [];
+
+        }
+
+
+        appState.documents.push(
+            entry
+        );
+
+
+        // =============================================
+        // REFRESH DOCUMENT TABLE
+        // =============================================
 
         appState.renderDocuments();
 
 
         console.log(
-            "Document uploaded successfully:",
-            entry
+            "Document uploaded successfully."
         );
 
 
@@ -1583,12 +1638,14 @@ async function(file){
 
 
         alert(
-            "Document upload failed. Please try again."
+            "Document upload failed: " +
+            error.message
         );
 
     }
 
 };
+
 
 
 
