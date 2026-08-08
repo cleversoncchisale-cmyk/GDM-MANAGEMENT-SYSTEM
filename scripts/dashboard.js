@@ -1384,121 +1384,187 @@ appState.renderMinistries();
 // UPLOAD DOCUMENT
 // =====================================================
 
-
 appState.uploadDocumentFile =
 async function(file){
 
+    if(!file)
+        return;
 
 
-if(!file)
-return;
+    if(
+        !appState.storage ||
+        !appState.db
+    ){
+
+        console.error(
+            "Firebase Storage or Firestore is not available."
+        );
+
+        return;
+
+    }
 
 
+    try{
+
+        // -----------------------------
+        // Create unique storage path
+        // -----------------------------
+
+        const safeName =
+            file.name.replace(
+                /[^a-zA-Z0-9._-]/g,
+                "_"
+            );
+
+        const storagePath =
+            `documents/${Date.now()}_${safeName}`;
 
 
-const extension =
-file.name
-.split(".")
-.pop()
-.toLowerCase();
+        // -----------------------------
+        // Upload file to Firebase Storage
+        // -----------------------------
+
+        const storageRef =
+            appState.storage.ref(storagePath);
 
 
-
-const typeMap={
-
-pdf:"PDF",
-
-doc:"Word",
-
-docx:"Word",
-
-jpg:"Image",
-
-jpeg:"Image",
-
-png:"Image",
-
-mp4:"Video",
-
-mov:"Video"
-
-};
+        await storageRef.put(file);
 
 
+        // -----------------------------
+        // Get downloadable URL
+        // -----------------------------
 
-const type =
-typeMap[extension] ||
-extension.toUpperCase();
-
-
-
-const size =
-file.size <
-1024*1024
-
-?
-
-`${Math.round(file.size/1024)} KB`
-
-:
-
-`${(file.size/(1024*1024)).toFixed(1)} MB`;
+        const downloadURL =
+            await storageRef.getDownloadURL();
 
 
+        // -----------------------------
+        // Determine file type
+        // -----------------------------
+
+        const extension =
+            file.name
+                .split(".")
+                .pop()
+                .toLowerCase();
 
 
+        const typeMap = {
 
-const entry={
+            pdf: "PDF",
+            doc: "Word",
+            docx: "Word",
+            jpg: "Image",
+            jpeg: "Image",
+            png: "Image",
+            mp4: "Video",
+            mov: "Video"
 
-
-title:file.name,
-
-
-ministry:
-appState.ministries?.[0]?.title ||
-"General",
-
-
-type,
-
-
-size,
+        };
 
 
-uploadedBy:
-appState.currentUser?.displayName ||
-"System",
+        const type =
+            typeMap[extension] ||
+            extension.toUpperCase();
 
 
-uploadedAt:
-new Date()
-.toISOString()
+        // -----------------------------
+        // Determine file size
+        // -----------------------------
+
+        const size =
+            file.size < 1024 * 1024
+
+            ?
+
+            `${Math.round(
+                file.size / 1024
+            )} KB`
+
+            :
+
+            `${(
+                file.size /
+                (1024 * 1024)
+            ).toFixed(1)} MB`;
 
 
+        // -----------------------------
+        // Create document record
+        // -----------------------------
 
-};
+        const entry = {
+
+            title:
+                file.name,
+
+            ministry:
+                appState.ministries?.[0]?.title ||
+                "General",
+
+            type,
+
+            size,
+
+            fileUrl:
+                downloadURL,
+
+            storagePath,
+
+            uploadedBy:
+                appState.currentUser?.displayName ||
+                "System",
+
+            uploadedAt:
+                new Date().toISOString()
+
+        };
 
 
+        // -----------------------------
+        // Save document metadata
+        // -----------------------------
+
+        if(
+            typeof appState.saveDocumentEntry ===
+            "function"
+        ){
+
+            await appState.saveDocumentEntry(
+                entry
+            );
+
+        }
 
 
+        // -----------------------------
+        // Refresh documents
+        // -----------------------------
 
-if(
-typeof appState.saveDocumentEntry==="function"
-){
-
-
-await appState.saveDocumentEntry(
-entry
-);
+        appState.renderDocuments();
 
 
-}
+        console.log(
+            "Document uploaded successfully:",
+            entry
+        );
 
 
+    }catch(error){
 
-appState.renderDocuments();
+        console.error(
+            "Document upload failed:",
+            error
+        );
 
 
+        alert(
+            "Document upload failed. Please try again."
+        );
+
+    }
 
 };
 
