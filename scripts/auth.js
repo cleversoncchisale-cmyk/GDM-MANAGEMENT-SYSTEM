@@ -35,14 +35,28 @@ window.gdmApp = window.gdmApp || {};
   const logoutBtn = document.getElementById("logoutBtn");
 
   appState.resolveUserRole = function (email) {
-    const normalized = (email || "").toLowerCase();
-    if (normalized.includes("super")) return "Super Admin";
-    if (normalized.includes("admin")) return "Admin";
-    if (normalized.includes("leader")) return "Ministry Leader";
-    if (normalized.includes("volunteer")) return "Volunteer";
-    if (normalized.includes("viewer")) return "Viewer";
-    return "Admin";
-  };
+
+    const normalized =
+        (email || "").toLowerCase().trim();
+
+    if (normalized.includes("super")) {
+        return "Super Admin";
+    }
+
+    if (normalized.includes("admin")) {
+        return "Admin";
+    }
+
+    if (normalized.includes("member")) {
+        return "Member";
+    }
+
+    if (normalized.includes("viewer")) {
+        return "Viewer";
+    }
+
+    return "Viewer";
+};
 
   appState.normalizeUser = function (user) {
     const email = user.email || "guest@gdm.org";
