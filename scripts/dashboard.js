@@ -190,30 +190,57 @@ titles[target] ||
 
 function isSectionAllowed(target){
 
-    if(!appState.currentUser)
+    if(!appState.currentUser){
         return false;
+    }
 
     const role =
-        appState.currentUser.role ||
-        "Viewer";
+        String(
+            appState.currentUser.role || "Viewer"
+        ).trim();
 
     const permissions = {
+
         "Super Admin": [
             "dashboardSection",
             "ministriesSection",
+            "membersSection",
             "documentsSection",
             "reportsSection",
             "activitySection"
+        ],
+
+        "Admin": [
+            "dashboardSection",
+            "ministriesSection",
+            "membersSection",
+            "documentsSection",
+            "reportsSection",
+            "activitySection"
+        ],
+
+        "Member": [
+            "dashboardSection",
+            "ministriesSection",
+            "membersSection",
+            "documentsSection",
+            "reportsSection",
+            "activitySection"
+        ],
+
+        "Viewer": [
+            "dashboardSection",
+            "ministriesSection",
+            "membersSection"
         ]
+
     };
 
     return (
         permissions[role] || []
     ).includes(target);
 
-
 }
-
 
 
 
@@ -229,14 +256,19 @@ appState.updateNavPermissions = function(){
             return;
         }
 
-        // TEMPORARY TEST:
-        // Allow all navigation buttons
-        const allowed = true;
+        const allowed =
+            isSectionAllowed(target);
 
-        item.classList.remove("disabled");
+        item.classList.toggle(
+            "disabled",
+            !allowed
+        );
 
         if(item.tagName === "BUTTON"){
-            item.disabled = false;
+
+            item.disabled =
+                !allowed;
+
         }
 
     });
