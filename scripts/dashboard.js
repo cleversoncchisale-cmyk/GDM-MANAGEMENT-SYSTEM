@@ -873,231 +873,253 @@ appState.renderMinistries = function () {
 // DOCUMENTS
 // =====================================================
 
+appState.renderDocuments = function(){
 
-appState.renderDocuments=function(){
+    const table =
+        document.getElementById(
+            "documentTableBody"
+        );
 
+    const documentCount =
+        document.getElementById(
+            "documentCount"
+        );
 
-const table =
-    document.getElementById(
-        "documentTableBody"
-    );
+    const ministryCount =
+        document.getElementById(
+            "docMinistryCount"
+        );
 
+    const recentCount =
+        document.getElementById(
+            "recentUploadsCount"
+        );
 
 
-const documentCount =
-document.getElementById(
-"documentCount"
-);
+    const docs =
+        appState.documents ||
+        appState.dashboardData?.documents ||
+        [];
 
 
+    // =================================================
+    // DOCUMENT COUNT
+    // =================================================
 
-const ministryCount =
-document.getElementById(
-"docMinistryCount"
-);
+    if(documentCount){
 
+        documentCount.textContent =
+            String(docs.length);
 
+    }
 
-const recentCount =
-document.getElementById(
-"recentUploadsCount"
-);
 
+    // =================================================
+    // MINISTRY COUNT
+    // =================================================
 
+    const ministries =
+        new Set(
+            docs.map(
+                doc =>
+                    doc.ministry ||
+                    "General"
+            )
+        );
 
 
-const docs =
-appState.documents ||
-appState.dashboardData?.documents ||
-[];
+    if(ministryCount){
 
+        ministryCount.textContent =
+            String(ministries.size);
 
+    }
 
 
-if(documentCount)
-documentCount.textContent =
-String(docs.length);
+    // =================================================
+    // RECENT UPLOADS
+    // =================================================
 
+    if(recentCount){
 
+        const recent =
+            docs.filter(doc => {
 
+                if(!doc.uploadedAt)
+                    return false;
 
 
-const ministries =
-new Set(
-docs.map(doc=>
-doc.ministry || "General"
-)
-);
+                // Firestore Timestamp
+                if(
+                    typeof doc.uploadedAt.toDate ===
+                    "function"
+                ){
 
+                    const diff =
+                        Date.now() -
+                        doc.uploadedAt
+                            .toDate()
+                            .getTime();
 
+                    return (
+                        diff <
+                        7 *
+                        24 *
+                        60 *
+                        60 *
+                        1000
+                    );
 
-if(ministryCount)
-ministryCount.textContent =
-String(ministries.size);
+                }
 
 
+                // String date
+                if(
+                    typeof doc.uploadedAt ===
+                    "string"
+                ){
 
+                    if(
+                        doc.uploadedAt.includes("T")
+                    ){
 
+                        const diff =
+                            Date.now() -
+                            new Date(
+                                doc.uploadedAt
+                            ).getTime();
 
-if(recentCount){
+                        return (
+                            diff <
+                            7 *
+                            24 *
+                            60 *
+                            60 *
+                            1000
+                        );
 
+                    }
 
-const recent =
-docs.filter(doc=>{
 
-if(!doc.uploadedAt)
-return false;
+                    return (
+                        doc.uploadedAt.includes("day") ||
+                        doc.uploadedAt.includes("week")
+                    );
 
+                }
 
-// Firestore Timestamp support
-if(
-typeof doc.uploadedAt.toDate === "function"
-){
 
-const diff =
-Date.now() -
-doc.uploadedAt.toDate().getTime();
+                return false;
 
-return diff <
-7 *
-24 *
-60 *
-60 *
-1000;
+            }).length;
 
-}
 
+        recentCount.textContent =
+            String(recent);
 
-// Normal string date support
-if(
-typeof doc.uploadedAt === "string"
-){
+    }
 
-if(
-doc.uploadedAt.includes("T")
-){
 
-const diff =
-Date.now() -
-new Date(doc.uploadedAt).getTime();
+    // =================================================
+    // DOCUMENT TABLE
+    // =================================================
 
-return diff <
-7 *
-24 *
-60 *
-60 *
-1000;
+    if(!table)
+        return;
 
-}
 
+    table.innerHTML = "";
 
-return (
-doc.uploadedAt.includes("day") ||
-doc.uploadedAt.includes("week")
-);
 
-}
+    // No documents
+    if(!docs.length){
 
+        table.innerHTML = `
 
-return false;
+            <tr>
 
+                <td colspan="6">
+                    No documents available.
+                </td>
 
-}).length;
+            </tr>
 
+        `;
 
-recentCount.textContent =
-String(recent);
+        return;
 
-}
+    }
 
 
+    // =================================================
+    // RENDER DOCUMENTS
+    // =================================================
 
+    docs.forEach(doc => {
 
+        const row =
+            document.createElement(
+                "tr"
+            );
 
-if(table){
 
+        const openButton =
+            doc.fileUrl
 
-table.innerHTML="";
+            ?
 
+            `
+            <a
+                href="${doc.fileUrl}"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="secondary-btn"
+            >
+                Open
+            </a>
+            `
 
+            :
 
-if(!docs.length){
+            `
+            <span>
+                Not available
+            </span>
+            `;
 
 
-table.innerHTML=
-`
+        row.innerHTML = `
 
-<tr>
+            <td>
+                ${doc.title || "-"}
+            </td>
 
-<td colspan="5">
-No documents available.
-</td>
+            <td>
+                ${doc.ministry || "General"}
+            </td>
 
-</tr>
+            <td>
+                ${doc.type || "-"}
+            </td>
 
-`;
+            <td>
+                ${doc.size || "-"}
+            </td>
 
+            <td>
+                ${doc.uploadedAt || "-"}
+            </td>
 
-return;
+            <td>
+                ${openButton}
+            </td>
 
+        `;
 
-}
 
+        table.appendChild(row);
 
-
-
-docs.forEach(doc=>{
-
-
-const row =
-document.createElement(
-"tr"
-);
-
-
-
-row.innerHTML=
-`
-
-<td>
-${doc.title || "-"}
-</td>
-
-
-<td>
-${doc.ministry || "General"}
-</td>
-
-
-<td>
-${doc.type || "-"}
-</td>
-
-
-<td>
-${doc.size || "-"}
-</td>
-
-
-<td>
-${doc.uploadedAt || "-"}
-</td>
-
-
-`;
-
-
-
-table.appendChild(row);
-
-
-
-});
-
-
-}
-
-
+    });
 
 };
 
