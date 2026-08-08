@@ -1472,30 +1472,20 @@ return;
 
 if(!isSectionAllowed(target)){
 
+    if(
+        typeof appState.showToast==="function"
+    ){
 
-if(
-typeof appState.showToast==="function"
-){
+        appState.showToast(
+            "Access denied",
+            "You cannot access this section."
+        );
 
+    }
 
-appState.showToast(
-"Access denied",
-"You cannot access this section."
-);
-
-
-}
-
-
-
-return;
-
+    return;
 
 }
-
-
-
-
 
 showSection(target);
 
