@@ -223,15 +223,12 @@ function isSectionAllowed(target){
             "dashboardSection",
             "ministriesSection",
             "membersSection",
-            "documentsSection",
-            "reportsSection",
             "activitySection"
         ],
 
         "Viewer": [
             "dashboardSection",
-            "ministriesSection",
-            "membersSection"
+            "ministriesSection"
         ]
 
     };
@@ -239,7 +236,6 @@ function isSectionAllowed(target){
     return (
         permissions[role] || []
     ).includes(target);
-
 }
 
 
