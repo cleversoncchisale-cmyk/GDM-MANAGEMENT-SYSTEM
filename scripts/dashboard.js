@@ -847,7 +847,7 @@ if (ministryCount) {
     ministryCount.textContent =
         String(activeMinistries.length);
 }
-
+console.log("MINISTRY COUNT:", activeMinistries.length);
     // -----------------------------------------
     // Pending tasks
     // -----------------------------------------
