@@ -835,16 +835,19 @@ appState.renderDashboard = function () {
 // Active ministries
 // -----------------------------------------
 const activeMinistries = ministries;
+
 const ministryCount =
-    document.getElementById(
-        "ministryCount"
-    );
+    document.getElementById("ministryCount");
 
 if (ministryCount) {
     ministryCount.textContent =
         String(activeMinistries.length);
 }
-console.log("MINISTRY COUNT:", activeMinistries.length);
+
+console.log(
+    "MINISTRY COUNT:",
+    activeMinistries.length
+);
     // -----------------------------------------
 // Overview counters
 // -----------------------------------------
