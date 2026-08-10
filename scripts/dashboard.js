@@ -835,13 +835,8 @@ appState.renderDashboard = function () {
 // Active ministries
 // -----------------------------------------
 
-const activeMinistries = ministries.filter(
-    ministry => {
-        return String(
-            ministry.status || "Active"
-        ).toLowerCase() !== "inactive";
-    }
-);
+const activeMinistries =
+    ministries;
 
 const ministryCount =
     document.getElementById(
