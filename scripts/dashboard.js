@@ -898,104 +898,95 @@ if (memberCount) {
         String(totalMembers);
 }
 
-    // -----------------------------------------
-    // Statistics cards
-    // -----------------------------------------
-
-    const statsGrid =
-        document.getElementById(
-            "statsGrid"
-        );
-
-    if (!statsGrid) {
-        return;
-    }
-
-
-   const totalMembers =
+    const totalMembers =
     ministries.reduce(
         (total, ministry) =>
-            total + (Number(ministry.members) || 0),
+            total +
+            (Number(ministry.members) || 0),
         0
     );
 
-    const totalReports =
-        reports.length;
+
+const totalReports =
+    reports.length;
 
 
-    const totalDocuments =
-        documents.length;
+const totalDocuments =
+    documents.length;
 
 
-    const totalActivities =
-        activities.length;
+const totalActivities =
+    activities.length;
 
 
-    const stats = [
+// -----------------------------------------
+// Overview counters
+// -----------------------------------------
 
-        {
-            number:
-                String(activeMinistries.length),
+const overviewMinistries =
+    document.getElementById(
+        "activeMinistriesCount"
+    );
 
-            label:
-                "Active ministries"
-        },
+if (overviewMinistries) {
 
-        {
-            number:
-                String(totalMembers),
+    overviewMinistries.textContent =
+        String(activeMinistries.length);
 
-            label:
-                "Members"
-        },
-
-        {
-            number:
-                String(totalReports),
-
-            label:
-                "Submitted reports"
-        },
-
-        {
-            number:
-                String(totalDocuments),
-
-            label:
-                "Documents"
-        }
-
-    ];
+}
 
 
-    statsGrid.innerHTML = "";
+const overviewTasks =
+    document.getElementById(
+        "pendingTasksCount"
+    );
+
+if (overviewTasks) {
+
+    overviewTasks.textContent =
+        String(
+            activities.filter(activity => {
+
+                const status =
+                    String(
+                        activity.status || ""
+                    ).toLowerCase();
+
+                return (
+                    status === "pending" ||
+                    status === "open"
+                );
+
+            }).length
+        );
+
+}
 
 
-    stats.forEach(stat => {
+const overviewReports =
+    document.getElementById(
+        "reportSubmissionCount"
+    );
 
-        const card =
-            document.createElement(
-                "article"
-            );
+if (overviewReports) {
 
-        card.className =
-            "stat-card";
+    overviewReports.textContent =
+        String(totalReports);
 
-        card.innerHTML = `
+}
 
-            <div class="number">
-                ${stat.number}
-            </div>
 
-            <div class="label">
-                ${stat.label}
-            </div>
+const overviewMembers =
+    document.getElementById(
+        "memberCount"
+    );
 
-        `;
+if (overviewMembers) {
 
-        statsGrid.appendChild(card);
+    overviewMembers.textContent =
+        String(totalMembers);
 
-    });
+}
 
 
     // -----------------------------------------
