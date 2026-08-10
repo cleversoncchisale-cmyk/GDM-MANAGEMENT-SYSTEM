@@ -432,53 +432,48 @@ appState.showLoading(false);
 // RENDER EVERYTHING
 // =====================================================
 
+appState.renderAll = function () {
 
-if(typeof appState.renderMinistries==="function")
-    appState.renderMinistries();
-
-    if(appState.dashboardData){
+    if (appState.dashboardData) {
 
         appState.ministries =
-        appState.dashboardData.ministries || [];
+            appState.dashboardData.ministries || [];
 
         appState.members =
-        appState.dashboardData.members || [];
+            appState.dashboardData.members || [];
 
         appState.documents =
-        appState.dashboardData.documents || [];
+            appState.dashboardData.documents || [];
 
         appState.activity =
-        appState.dashboardData.activity || [];
+            appState.dashboardData.activity || [];
 
         appState.reportSubmissions =
-        appState.dashboardData.reportSubmissions || [];
+            appState.dashboardData.reportSubmissions || [];
 
     }
 
-
     appState.renderDashboard();
 
-
-    appState.renderMinistries();
-
+    if (typeof appState.renderMinistries === "function") {
+        appState.renderMinistries();
+    }
 
     appState.renderMembers();
 
-
-    if(typeof appState.renderDocuments==="function")
+    if (typeof appState.renderDocuments === "function") {
         appState.renderDocuments();
+    }
 
-
-    if(typeof appState.renderReports==="function")
+    if (typeof appState.renderReports === "function") {
         appState.renderReports();
+    }
 
-
-    if(typeof appState.renderActivity==="function")
+    if (typeof appState.renderActivity === "function") {
         appState.renderActivity();
-
+    }
 
 };
-
 
 // =====================================================
 // MINISTRIES
