@@ -850,7 +850,7 @@ appState.renderDashboard = function () {
 
     const ministryCount =
         document.getElementById(
-            "ministryCount"
+            "activeMinistriesCount"
         );
 
     if (ministryCount) {
@@ -866,9 +866,9 @@ appState.renderDashboard = function () {
     // -----------------------------------------
 
     const taskCount =
-        document.getElementById(
-            "taskCount"
-        );
+    document.getElementById(
+        "pendingTasksCount"
+    );
 
     if (taskCount) {
 
@@ -891,7 +891,25 @@ appState.renderDashboard = function () {
             String(pendingTasks);
 
     }
+const reportCount =
+    document.getElementById(
+        "reportSubmissionCount"
+    );
 
+if (reportCount) {
+    reportCount.textContent =
+        String(reports.length);
+}
+
+const memberCount =
+    document.getElementById(
+        "memberCount"
+    );
+
+if (memberCount) {
+    memberCount.textContent =
+        String(totalMembers);
+}
 
     // -----------------------------------------
     // Statistics cards
