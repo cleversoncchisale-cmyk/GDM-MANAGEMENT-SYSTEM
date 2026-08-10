@@ -834,7 +834,7 @@ appState.renderDashboard = function () {
    // -----------------------------------------
 // Active ministries
 // -----------------------------------------
-
+const activeMinistries = ministries;
 const ministryCount =
     document.getElementById(
         "ministryCount"
