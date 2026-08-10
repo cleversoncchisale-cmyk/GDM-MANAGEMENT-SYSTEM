@@ -704,166 +704,281 @@ statsGrid.appendChild(card);
 // =====================================================
 
 
-appState.renderMinistries = function () {
+appState.renderDashboard = function () {
 
-    const ministryCards = document.getElementById("ministryCards");
-    const ministryTableBody = document.getElementById("ministryTableBody");
+    const data = appState.dashboardData || {};
 
-    const query = (ministriesSearch?.value || "")
-        .toLowerCase()
-        .trim();
+    // -----------------------------------------
+    // Basic content
+    // -----------------------------------------
+
+    const heroTitle =
+        document.getElementById("heroTitle");
+
+    const heroSummary =
+        document.getElementById("heroSummary");
+
+    if (heroTitle) {
+        heroTitle.textContent =
+            data.heroTitle ||
+            "Operational Insights for the Ministries";
+    }
+
+    if (heroSummary) {
+        heroSummary.textContent =
+            data.summary || "";
+    }
 
 
-    const source =
+    // -----------------------------------------
+    // Current application data
+    // -----------------------------------------
+
+    const ministries =
         appState.ministries ||
-        appState.dashboardData?.ministries ||
+        data.ministries ||
+        [];
+
+    const members =
+        appState.members ||
+        data.members ||
+        [];
+
+    const reports =
+        appState.reportSubmissions ||
+        data.reportSubmissions ||
+        [];
+
+    const documents =
+        appState.documents ||
+        data.documents ||
+        [];
+
+    const activities =
+        appState.activity ||
+        data.activity ||
         [];
 
 
-    const ministries = source.filter((ministry)=>{
+    // -----------------------------------------
+    // Active ministries
+    // -----------------------------------------
 
-        const title =
-            String(ministry.title || "")
-            .toLowerCase();
+    const activeMinistries =
+        ministries.filter(ministry => {
 
-        const lead =
-            String(ministry.lead || "")
-            .toLowerCase();
+            const status =
+                String(
+                    ministry.status || "Active"
+                ).toLowerCase();
 
-        const focus =
-            String(ministry.focus || "")
-            .toLowerCase();
+            return status !== "inactive";
+
+        });
 
 
-        return (
-            title.includes(query) ||
-            lead.includes(query) ||
-            focus.includes(query)
+    const ministryCount =
+        document.getElementById(
+            "ministryCount"
         );
+
+    if (ministryCount) {
+
+        ministryCount.textContent =
+            String(activeMinistries.length);
+
+    }
+
+
+    // -----------------------------------------
+    // Pending tasks
+    // -----------------------------------------
+
+    const taskCount =
+        document.getElementById(
+            "taskCount"
+        );
+
+    if (taskCount) {
+
+        const pendingTasks =
+            activities.filter(activity => {
+
+                const status =
+                    String(
+                        activity.status || ""
+                    ).toLowerCase();
+
+                return (
+                    status === "pending" ||
+                    status === "open"
+                );
+
+            }).length;
+
+        taskCount.textContent =
+            String(pendingTasks);
+
+    }
+
+
+    // -----------------------------------------
+    // Statistics cards
+    // -----------------------------------------
+
+    const statsGrid =
+        document.getElementById(
+            "statsGrid"
+        );
+
+    if (!statsGrid) {
+        return;
+    }
+
+
+    const totalMembers =
+        members.length;
+
+
+    const totalReports =
+        reports.length;
+
+
+    const totalDocuments =
+        documents.length;
+
+
+    const totalActivities =
+        activities.length;
+
+
+    const stats = [
+
+        {
+            number:
+                String(activeMinistries.length),
+
+            label:
+                "Active ministries"
+        },
+
+        {
+            number:
+                String(totalMembers),
+
+            label:
+                "Members"
+        },
+
+        {
+            number:
+                String(totalReports),
+
+            label:
+                "Submitted reports"
+        },
+
+        {
+            number:
+                String(totalDocuments),
+
+            label:
+                "Documents"
+        }
+
+    ];
+
+
+    statsGrid.innerHTML = "";
+
+
+    stats.forEach(stat => {
+
+        const card =
+            document.createElement(
+                "article"
+            );
+
+        card.className =
+            "stat-card";
+
+        card.innerHTML = `
+
+            <div class="number">
+                ${stat.number}
+            </div>
+
+            <div class="label">
+                ${stat.label}
+            </div>
+
+        `;
+
+        statsGrid.appendChild(card);
 
     });
 
 
-    if(ministryCards){
+    // -----------------------------------------
+    // Ministry mini cards
+    // -----------------------------------------
 
-        ministryCards.innerHTML="";
+    const miniCards =
+        document.getElementById(
+            "miniCards"
+        );
 
+    if (miniCards) {
 
-        if(!ministries.length){
+        miniCards.innerHTML = "";
 
-            ministryCards.innerHTML =
-            `
-            <div class="empty-state">
-                No ministries found.
-            </div>
+        if (!activeMinistries.length) {
+
+            miniCards.innerHTML = `
+                <div class="empty-state">
+                    No ministry data available.
+                </div>
             `;
+
+        } else {
+
+            activeMinistries.forEach(
+                ministry => {
+
+                    const card =
+                        document.createElement(
+                            "div"
+                        );
+
+                    card.className =
+                        "mini-card";
+
+                    card.innerHTML = `
+
+                        <strong>
+                            ${ministry.title || "Unnamed Ministry"}
+                        </strong>
+
+                        <span>
+                            ${Number(ministry.members) || 0}
+                            members
+                        </span>
+
+                        <span>
+                            ${Number(ministry.progress) || 0}%
+                            progress
+                        </span>
+
+                    `;
+
+                    miniCards.appendChild(card);
+
+                }
+            );
 
         }
 
-
-        ministries.forEach((ministry)=>{
-
-
-            const card =
-            document.createElement("article");
-
-
-            card.className =
-            "ministry-card";
-
-
-            card.innerHTML=`
-
-            <h4>
-                ${ministry.title || "Unnamed Ministry"}
-            </h4>
-
-
-            <p>
-                ${ministry.focus || "No focus added"}
-            </p>
-
-
-            <div class="progress-bar">
-                <span style="
-                width:${ministry.progress || 0}%
-                ">
-                </span>
-            </div>
-
-
-            <div class="timeline-meta">
-
-                <span>
-                ${ministry.members || 0} members
-                </span>
-
-
-                <strong>
-                ${ministry.status || "Active"}
-                </strong>
-
-            </div>
-
-            `;
-
-
-            ministryCards.appendChild(card);
-
-        });
-
     }
-
-
-
-    if(ministryTableBody){
-
-        ministryTableBody.innerHTML="";
-
-
-        ministries.forEach((ministry)=>{
-
-
-            const row =
-            document.createElement("tr");
-
-
-            row.innerHTML=`
-
-            <td>${ministry.title || "-"}</td>
-
-            <td>${ministry.lead || "-"}</td>
-
-            <td>${ministry.progress || 0}%</td>
-
-            <td>${ministry.members || 0}</td>
-
-            <td>${ministry.status || "-"}</td>
-
-            `;
-
-
-            ministryTableBody.appendChild(row);
-
-        });
-
-    }
-
-
-
-    const totalMinistries =
-    document.getElementById(
-    "totalMinistriesCount"
-    );
-
-
-    if(totalMinistries){
-
-        totalMinistries.textContent =
-        String(source.length);
-
-    }
-
 
 };
 
