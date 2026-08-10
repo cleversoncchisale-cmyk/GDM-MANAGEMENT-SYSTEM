@@ -846,83 +846,26 @@ if (ministryCount) {
 }
 console.log("MINISTRY COUNT:", activeMinistries.length);
     // -----------------------------------------
-    // Pending tasks
-    // -----------------------------------------
+// Overview counters
+// -----------------------------------------
 
-    const taskCount =
-    document.getElementById(
-        "pendingTasksCount"
-    );
-
-    if (taskCount) {
-
-        const pendingTasks =
-            activities.filter(activity => {
-
-                const status =
-                    String(
-                        activity.status || ""
-                    ).toLowerCase();
-
-                return (
-                    status === "pending" ||
-                    status === "open"
-                );
-
-            }).length;
-
-        taskCount.textContent =
-            String(pendingTasks);
-
-    }
-const reportCount =
-    document.getElementById(
-        "reportSubmissionCount"
-    );
-
-if (reportCount) {
-    reportCount.textContent =
-        String(reports.length);
-}
-
-const memberCount =
-    document.getElementById(
-        "memberCount"
-    );
-
-if (memberCount) {
-    memberCount.textContent =
-        String(totalMembers);
-}
-
-    const totalMembers =
-    ministries.reduce(
-        (total, ministry) =>
-            total +
-            (Number(ministry.members) || 0),
-        0
-    );
-
+const totalMembers =
+    members.length;
 
 const totalReports =
     reports.length;
 
-
 const totalDocuments =
     documents.length;
-
 
 const totalActivities =
     activities.length;
 
 
-// -----------------------------------------
-// Overview counters
-// -----------------------------------------
-
+// Active ministries
 const overviewMinistries =
     document.getElementById(
-        "activeMinistriesCount"
+        "ministryCount"
     );
 
 if (overviewMinistries) {
@@ -933,6 +876,7 @@ if (overviewMinistries) {
 }
 
 
+// Pending tasks
 const overviewTasks =
     document.getElementById(
         "pendingTasksCount"
@@ -940,26 +884,28 @@ const overviewTasks =
 
 if (overviewTasks) {
 
+    const pendingTasks =
+        activities.filter(activity => {
+
+            const status =
+                String(
+                    activity.status || ""
+                ).toLowerCase();
+
+            return (
+                status === "pending" ||
+                status === "open"
+            );
+
+        }).length;
+
     overviewTasks.textContent =
-        String(
-            activities.filter(activity => {
-
-                const status =
-                    String(
-                        activity.status || ""
-                    ).toLowerCase();
-
-                return (
-                    status === "pending" ||
-                    status === "open"
-                );
-
-            }).length
-        );
+        String(pendingTasks);
 
 }
 
 
+// Reports submitted
 const overviewReports =
     document.getElementById(
         "reportSubmissionCount"
@@ -973,6 +919,7 @@ if (overviewReports) {
 }
 
 
+// Team members
 const overviewMembers =
     document.getElementById(
         "memberCount"
