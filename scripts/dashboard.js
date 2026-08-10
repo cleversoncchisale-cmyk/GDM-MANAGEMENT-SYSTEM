@@ -594,110 +594,6 @@ container.appendChild(card);
 
 
 
-// =====================================================
-// DASHBOARD HOME
-// =====================================================
-
-
-appState.renderDashboard=function(){
-
-
-const data =
-appState.dashboardData;
-
-
-if(!data)
-return;
-
-
-
-const heroTitle =
-document.getElementById(
-"heroTitle"
-);
-
-
-const heroSummary =
-document.getElementById(
-"heroSummary"
-);
-
-
-
-if(heroTitle)
-heroTitle.textContent =
-data.heroTitle || 
-"Good Deeds Ministries";
-
-
-
-if(heroSummary)
-heroSummary.textContent =
-data.summary || "";
-
-
-
-
-
-const statsGrid =
-document.getElementById(
-"statsGrid"
-);
-
-
-
-if(statsGrid){
-
-
-statsGrid.innerHTML="";
-
-
-
-(data.stats || [])
-.forEach(stat=>{
-
-
-const card =
-document.createElement(
-"article"
-);
-
-
-
-card.className =
-"stat-card";
-
-
-
-card.innerHTML=
-`
-
-<div class="number">
-${stat.number || 0}
-</div>
-
-<div class="label">
-${stat.label || ""}
-</div>
-
-`;
-
-
-
-statsGrid.appendChild(card);
-
-
-
-});
-
-
-}
-
-
-
-
-
-};
 
 // =====================================================
 // MINISTRIES RENDERING (FIRESTORE SAFE)
@@ -836,9 +732,12 @@ appState.renderDashboard = function () {
     }
 
 
-    const totalMembers =
-        members.length;
-
+   const totalMembers =
+    ministries.reduce(
+        (total, ministry) =>
+            total + (Number(ministry.members) || 0),
+        0
+    );
 
     const totalReports =
         reports.length;
