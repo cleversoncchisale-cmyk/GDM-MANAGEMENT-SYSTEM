@@ -479,7 +479,186 @@ appState.renderAll=function(){
 };
 
 
+// =====================================================
+// MINISTRIES
+// =====================================================
 
+appState.renderMinistries = function () {
+
+    const container =
+        document.getElementById("ministriesGrid");
+
+    const table =
+        document.getElementById("ministriesTableBody");
+
+    const count =
+        document.getElementById("ministriesCount");
+
+    const ministries =
+        appState.ministries ||
+        appState.dashboardData?.ministries ||
+        [];
+
+    // -----------------------------------------
+    // Search
+    // -----------------------------------------
+
+    const search =
+        document.getElementById("ministriesSearch")
+        ?.value
+        ?.toLowerCase()
+        .trim() || "";
+
+    const filtered =
+        ministries.filter(ministry => {
+
+            const title =
+                String(
+                    ministry.title ||
+                    ministry.name ||
+                    ""
+                ).toLowerCase();
+
+            const lead =
+                String(
+                    ministry.lead ||
+                    ministry.leader ||
+                    ""
+                ).toLowerCase();
+
+            return (
+                !search ||
+                title.includes(search) ||
+                lead.includes(search)
+            );
+
+        });
+
+    // -----------------------------------------
+    // Count
+    // -----------------------------------------
+
+    if (count) {
+
+        count.textContent =
+            String(filtered.length);
+
+    }
+
+    // -----------------------------------------
+    // Cards
+    // -----------------------------------------
+
+    if (container) {
+
+        container.innerHTML = "";
+
+        if (!filtered.length) {
+
+            container.innerHTML = `
+                <div class="empty-state">
+                    No ministry data available.
+                </div>
+            `;
+
+        } else {
+
+            filtered.forEach(ministry => {
+
+                const card =
+                    document.createElement("article");
+
+                card.className =
+                    "ministry-card";
+
+                card.innerHTML = `
+
+                    <h3>
+                        ${ministry.title ||
+                          ministry.name ||
+                          "Unnamed Ministry"}
+                    </h3>
+
+                    <p>
+                        ${ministry.description || ""}
+                    </p>
+
+                    <div>
+                        <strong>
+                            ${Number(ministry.members) || 0}
+                        </strong>
+                        members
+                    </div>
+
+                    <div>
+                        <strong>
+                            ${Number(ministry.progress) || 0}%
+                        </strong>
+                        progress
+                    </div>
+
+                    <div>
+                        ${ministry.status || "Active"}
+                    </div>
+
+                `;
+
+                container.appendChild(card);
+
+            });
+
+        }
+
+    }
+
+    // -----------------------------------------
+    // Table
+    // -----------------------------------------
+
+    if (table) {
+
+        table.innerHTML = "";
+
+        filtered.forEach(ministry => {
+
+            const row =
+                document.createElement("tr");
+
+            row.innerHTML = `
+
+                <td>
+                    ${ministry.title ||
+                      ministry.name ||
+                      "Unnamed Ministry"}
+                </td>
+
+                <td>
+                    ${ministry.lead ||
+                      ministry.leader ||
+                      "-"}
+                </td>
+
+                <td>
+                    ${Number(ministry.progress) || 0}%
+                </td>
+
+                <td>
+                    ${Number(ministry.members) || 0}
+                </td>
+
+                <td>
+                    ${ministry.status || "Active"}
+                </td>
+
+            `;
+
+            table.appendChild(row);
+
+        });
+
+    }
+
+};
 
 // =====================================================
 // MEMBERS
