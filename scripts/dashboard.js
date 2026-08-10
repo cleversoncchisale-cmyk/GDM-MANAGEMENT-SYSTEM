@@ -433,7 +433,8 @@ appState.showLoading(false);
 // =====================================================
 
 
-appState.renderAll=function(){
+if(typeof appState.renderMinistries==="function")
+    appState.renderMinistries();
 
     if(appState.dashboardData){
 
