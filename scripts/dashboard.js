@@ -831,35 +831,27 @@ appState.renderDashboard = function () {
         [];
 
 
-    // -----------------------------------------
-    // Active ministries
-    // -----------------------------------------
+   // -----------------------------------------
+// Active ministries
+// -----------------------------------------
 
-    const activeMinistries =
-        ministries.filter(ministry => {
-
-            const status =
-                String(
-                    ministry.status || "Active"
-                ).toLowerCase();
-
-            return status !== "inactive";
-
-        });
-
-
-    const ministryCount =
-        document.getElementById(
-            "activeMinistriesCount"
-        );
-
-    if (ministryCount) {
-
-        ministryCount.textContent =
-            String(activeMinistries.length);
-
+const activeMinistries = ministries.filter(
+    ministry => {
+        return String(
+            ministry.status || "Active"
+        ).toLowerCase() !== "inactive";
     }
+);
 
+const ministryCount =
+    document.getElementById(
+        "activeMinistriesCount"
+    );
+
+if (ministryCount) {
+    ministryCount.textContent =
+        String(activeMinistries.length);
+}
 
     // -----------------------------------------
     // Pending tasks
