@@ -668,644 +668,163 @@ function renderTasks() {
 
 
     // ---------------------------------------------
-    // TASK ROWS
-    // ---------------------------------------------
-
+// TASK ROWS
+// ---------------------------------------------
     tasks.forEach(task => {
 
-        const row =
-            document.createElement(
-                "tr"
-            );
+    const row = document.createElement("tr");
 
+    const completed = isTaskCompleted(task);
 
-        const completed =
-            isTaskCompleted(task);
+    const overdue = isTaskOverdue(task);
 
+    const dueDate = taskDate(task.dueDate);
 
-        const overdue =
-            isTaskOverdue(task);
+    const formattedDate = dueDate
+        ? dueDate.toLocaleDateString()
+        : "-";
 
 
-        const dueDate =
-            taskDate(
-                task.dueDate
-            );
+    // =============================================
+    // TASK STATUS
+    // =============================================
 
+    let status = String(
+        task.status || "Pending"
+    );
 
-        const formattedDate =
-            dueDate
 
-                ?
+    if (completed) {
 
-                dueDate.toLocaleDateString()
+        status = "Completed";
 
-                :
+    } else if (overdue) {
 
-                "-";
-
-
-        let status =
-            task.status ||
-            "Pending";
-
-
-        if (completed) {
-
-            status =
-                "Completed";
-
-        }
-
-        else if (overdue) {
-
-            status =
-                "Overdue";
-
-        }
-
-
-        // AUTOMATIC PROGRESS
-
-        const progress =
-            getAutomaticProgress(
-                task
-            );
-
-
-        row.innerHTML = `
-
-            <td>
-
-                <strong>
-
-                    ${
-                        escapeTaskText(
-                            task.title ||
-                            "Untitled task"
-                        )
-                    }
-
-                </strong>
-
-                <div>
-
-                    ${
-                        escapeTaskText(
-                            task.description ||
-                            ""
-                        )
-                    }
-
-                </div>
-
-            </td>
-
-
-            <td>
-
-                ${
-                    escapeTaskText(
-                        task.assignedToName ||
-                        task.assignedTo ||
-                        "-"
-                    )
-                }
-
-            </td>
-
-
-            <td>
-
-                ${
-                    escapeTaskText(
-                        task.ministry ||
-                        "-"
-                    )
-                }
-
-            </td>
-
-
-            <td>
-
-                ${formattedDate}
-
-            </td>
-
-
-            <td>
-
-                ${status}
-
-            </td>
-
-
-            <td>
-
-                <strong>
-                    ${progress}%
-                </strong>
-
-            </td>
-
-        `;
-
-
-        table.appendChild(row);
-
-    });
-
-}
-
-
-// =====================================================
-// SAFE TEXT
-// =====================================================
-
-function escapeTaskText(value) {
-
-    return String(value)
-        .replace(
-            /&/g,
-            "&amp;"
-        )
-        .replace(
-            /</g,
-            "&lt;"
-        )
-        .replace(
-            />/g,
-            "&gt;"
-        )
-        .replace(
-            /"/g,
-            "&quot;"
-        )
-        .replace(
-            /'/g,
-            "&#039;"
-        );
-
-}
-
-
-// =====================================================
-// ASSIGN TASK MODAL
-// =====================================================
-
-function openTaskForm() {
-
-    if (
-        document.getElementById(
-            "taskModal"
-        )
-    ) {
-
-        return;
+        status = "Overdue";
 
     }
 
 
-    const memberOptions =
-        taskState.members
-            .map(member => {
+    // =============================================
+    // AUTOMATIC PROGRESS
+    // =============================================
 
-                const name =
-                    member.name ||
-                    member.fullName ||
-                    member.displayName ||
-                    member.memberName ||
-                    member.email ||
-                    "Unnamed member";
+    const progress =
+        getAutomaticProgress(task);
 
 
-                const id =
-                    member.uid ||
-                    member.id ||
-                    member.email ||
-                    name;
+    // =============================================
+    // TASK ROW
+    // =============================================
 
+    row.innerHTML = `
 
-                return `
+        <td>
 
-                    <option value="${escapeTaskText(id)}"
-                            data-name="${escapeTaskText(name)}">
+            <strong>
 
-                        ${escapeTaskText(name)}
+                ${
+                    escapeTaskText(
+                        task.title ||
+                        "Untitled task"
+                    )
+                }
 
-                    </option>
+            </strong>
 
-                `;
+            <div>
 
-            })
-            .join("");
-
-
-    const ministryOptions =
-        taskState.ministries
-            .map(ministry => {
-
-                const name =
-                    ministry.title ||
-                    ministry.name ||
-                    ministry.ministry ||
-                    "Unnamed ministry";
-
-
-                return `
-
-                    <option value="${escapeTaskText(name)}">
-
-                        ${escapeTaskText(name)}
-
-                    </option>
-
-                `;
-
-            })
-            .join("");
-
-
-    const modal =
-        document.createElement(
-            "div"
-        );
-
-
-    modal.id =
-        "taskModal";
-
-
-    modal.innerHTML = `
-
-        <div style="
-            position:fixed;
-            inset:0;
-            background:rgba(0,0,0,.55);
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            z-index:9999;
-            padding:20px;
-        ">
-
-            <div class="panel glass-panel"
-                 style="
-                    width:min(600px,100%);
-                    max-height:90vh;
-                    overflow:auto;
-                 ">
-
-                <div class="section-header">
-
-                    <h2>
-                        Assign New Task
-                    </h2>
-
-                    <button
-                        type="button"
-                        id="closeTaskModal"
-                        class="ghost-btn">
-
-                        ×
-
-                    </button>
-
-                </div>
-
-
-                <form id="taskForm"
-                      class="form-grid">
-
-
-                    <label>
-
-                        Task title
-
-                        <input
-                            id="taskTitle"
-                            type="text"
-                            required
-                            placeholder="Enter task title">
-
-                    </label>
-
-
-                    <label>
-
-                        Description
-
-                        <textarea
-                            id="taskDescription"
-                            rows="3"
-                            placeholder="Describe the task"></textarea>
-
-                    </label>
-
-
-                    <label>
-
-                        Assign to
-
-                        <select
-                            id="taskAssignee"
-                            required>
-
-                            <option value="">
-                                Select member
-                            </option>
-
-                            ${memberOptions}
-
-                        </select>
-
-                    </label>
-
-
-                    <label>
-
-                        Ministry
-
-                        <select
-                            id="taskMinistry"
-                            required>
-
-                            <option value="">
-                                Select ministry
-                            </option>
-
-                            ${ministryOptions}
-
-                        </select>
-
-                    </label>
-
-
-                    <label>
-
-                        Due date
-
-                        <input
-                            id="taskDueDate"
-                            type="date"
-                            required>
-
-                    </label>
-
-
-                    <div class="form-actions">
-
-                        <button
-                            type="submit"
-                            class="primary-btn">
-
-                            Assign Task
-
-                        </button>
-
-
-                        <button
-                            type="button"
-                            id="cancelTaskButton"
-                            class="ghost-btn">
-
-                            Cancel
-
-                        </button>
-
-                    </div>
-
-
-                </form>
+                ${
+                    escapeTaskText(
+                        task.description ||
+                        ""
+                    )
+                }
 
             </div>
 
-        </div>
+        </td>
+
+
+        <td>
+
+            ${
+                escapeTaskText(
+                    task.assignedToName ||
+                    task.assignedTo ||
+                    "-"
+                )
+            }
+
+        </td>
+
+
+        <td>
+
+            ${
+                escapeTaskText(
+                    task.ministry ||
+                    "-"
+                )
+            }
+
+        </td>
+
+
+        <td>
+
+            ${formattedDate}
+
+        </td>
+
+
+        <td>
+
+            <select
+                class="task-status-select"
+                data-task-id="${task.id}"
+            >
+
+                <option
+                    value="Pending"
+                    ${status === "Pending" ? "selected" : ""}
+                >
+                    Pending
+                </option>
+
+                <option
+                    value="In Progress"
+                    ${status === "In Progress" ? "selected" : ""}
+                >
+                    In Progress
+                </option>
+
+                <option
+                    value="Completed"
+                    ${status === "Completed" ? "selected" : ""}
+                >
+                    Completed
+                </option>
+
+            </select>
+
+        </td>
+
+
+        <td>
+
+            <strong>
+                ${progress}%
+            </strong>
+
+        </td>
 
     `;
 
 
-    document.body.appendChild(
-        modal
-    );
+    table.appendChild(row);
 
-
-    // ---------------------------------------------
-    // CLOSE
-    // ---------------------------------------------
-
-    document
-        .getElementById(
-            "closeTaskModal"
-        )
-        .addEventListener(
-            "click",
-            closeTaskForm
-        );
-
-
-    document
-        .getElementById(
-            "cancelTaskButton"
-        )
-        .addEventListener(
-            "click",
-            closeTaskForm
-        );
-
-
-    // ---------------------------------------------
-    // SUBMIT
-    // ---------------------------------------------
-
-    document
-        .getElementById(
-            "taskForm"
-        )
-        .addEventListener(
-            "submit",
-            saveNewTask
-        );
-
-}
-
-
-// =====================================================
-// CLOSE TASK FORM
-// =====================================================
-
-function closeTaskForm() {
-
-    const modal =
-        document.getElementById(
-            "taskModal"
-        );
-
-
-    if (modal) {
-
-        modal.remove();
-
-    }
-
-}
-
-
-// =====================================================
-// SAVE NEW TASK
-// =====================================================
-
-async function saveNewTask(event) {
-
-    event.preventDefault();
-
-
-    try {
-
-        const db =
-            firebase.firestore();
-
-
-        const title =
-            document.getElementById(
-                "taskTitle"
-            ).value.trim();
-
-
-        const description =
-            document.getElementById(
-                "taskDescription"
-            ).value.trim();
-
-
-        const assignee =
-            document.getElementById(
-                "taskAssignee"
-            );
-
-
-        const ministry =
-            document.getElementById(
-                "taskMinistry"
-            ).value;
-
-
-        const dueDate =
-            document.getElementById(
-                "taskDueDate"
-            ).value;
-
-
-        const assignedTo =
-            assignee.value;
-
-
-        const selectedOption =
-            assignee.options[
-                assignee.selectedIndex
-            ];
-
-
-        const assignedToName =
-            selectedOption
-                ?.getAttribute(
-                    "data-name"
-                ) || "-";
-
-
-        if (
-            !title ||
-            !assignedTo ||
-            !ministry ||
-            !dueDate
-        ) {
-
-            alert(
-                "Please complete all required fields."
-            );
-
-            return;
-
-        }
-
-
-        // -----------------------------------------
-        // CREATE TASK
-        // -----------------------------------------
-
-        const task = {
-
-            title,
-
-            description,
-
-            assignedTo,
-
-            assignedToName,
-
-            ministry,
-
-            dueDate,
-
-            status:
-                "Pending",
-
-            // AUTOMATIC
-
-            progress:
-                0,
-
-            createdBy:
-                taskState.currentUser?.uid ||
-                taskState.currentUser?.email ||
-                "admin",
-
-            createdByName:
-                taskState.currentUser?.displayName ||
-                taskState.currentUser?.email ||
-                "Admin",
-
-            createdAt:
-                firebase.firestore
-                    .FieldValue
-                    .serverTimestamp()
-
-        };
-
-
-        // -----------------------------------------
-        // SAVE TO FIRESTORE
-        // -----------------------------------------
-
-        const docRef =
-            await db
-                .collection("tasks")
-                .add(task);
-
-
-        console.log(
-            "Task created:",
-            docRef.id
-        );
-
-
-        // -----------------------------------------
-        // ADD TO LOCAL STATE
-        // -----------------------------------------
-
-        taskState.tasks.push({
-
-            id:
-                docRef.id,
-
-            ...task,
-
-            createdAt:
-                new Date()
-
-        });
-
+});
 
         renderTaskStatistics();
 
