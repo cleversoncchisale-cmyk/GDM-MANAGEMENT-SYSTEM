@@ -1,1 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    <title>Tasks | GDM Portal</title>
+
+    <link rel="stylesheet" href="../../style.css">
+</head>
+
+<body>
+
+    <header class="topbar">
+        <div>
+            <strong>GDM Portal</strong>
+            <span>Ministry operations dashboard</span>
+        </div>
+
+        <div>
+            <strong>Admin</strong>
+        </div>
+    </header>
+
+
+    <main class="main-content">
+
+        <section class="hero-card glass-panel">
+
+            <div>
+
+                <p class="eyebrow">
+                    Task Management
+                </p>
+
+                <h1>
+                    Tasks
+                </h1>
+
+                <p>
+                    Assign, track, and complete ministry tasks.
+                </p>
+
+            </div>
+
+            <button id="addTaskButton" class="primary-btn">
+                + Assign Task
+            </button>
+
+        </section>
+
+
+        <!-- TASK STATISTICS -->
+
+        <section class="panel glass-panel">
+
+            <div class="section-header">
+
+                <h2>
+                    Task Overview
+                </h2>
+
+            </div>
+
+
+            <div class="hero-stats">
+
+                <div>
+                    <span class="eyebrow">
+                        All Tasks
+                    </span>
+
+                    <strong id="allTasksCount">
+                        0
+                    </strong>
+                </div>
+
+
+                <div>
+                    <span class="eyebrow">
+                        My Tasks
+                    </span>
+
+                    <strong id="myTasksCount">
+                        0
+                    </strong>
+                </div>
+
+
+                <div>
+                    <span class="eyebrow">
+                        Due Today
+                    </span>
+
+                    <strong id="dueTodayCount">
+                        0
+                    </strong>
+                </div>
+
+
+                <div>
+                    <span class="eyebrow">
+                        Overdue
+                    </span>
+
+                    <strong id="overdueTasksCount">
+                        0
+                    </strong>
+                </div>
+
+
+                <div>
+                    <span class="eyebrow">
+                        Upcoming
+                    </span>
+
+                    <strong id="upcomingTasksCount">
+                        0
+                    </strong>
+                </div>
+
+
+                <div>
+                    <span class="eyebrow">
+                        Completed
+                    </span>
+
+                    <strong id="completedTasksCount">
+                        0
+                    </strong>
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- TASK LIST -->
+
+        <section class="panel glass-panel">
+
+            <div class="section-header">
+
+                <h2>
+                    All Tasks
+                </h2>
+
+                <select id="taskFilter">
+
+                    <option value="all">
+                        All tasks
+                    </option>
+
+                    <option value="my">
+                        My Tasks
+                    </option>
+
+                    <option value="overdue">
+                        Overdue
+                    </option>
+
+                    <option value="upcoming">
+                        Upcoming
+                    </option>
+
+                    <option value="completed">
+                        Completed
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="table-wrapper">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+
+                            <th>
+                                Task
+                            </th>
+
+                            <th>
+                                Assigned To
+                            </th>
+
+                            <th>
+                                Ministry
+                            </th>
+
+                            <th>
+                                Due Date
+                            </th>
+
+                            <th>
+                                Status
+                            </th>
+
+                            <th>
+                                Progress
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody id="tasksTableBody">
+
+                        <tr>
+
+                            <td colspan="6">
+                                No tasks available.
+                            </td>
+
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <script src="../../js/firebase.js"></script>
+    <script src="../../scripts/firestore.js"></script>
+    <script src="../../scripts/auth.js"></script>
+
+</body>
+</html>
