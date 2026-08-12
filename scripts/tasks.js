@@ -1469,10 +1469,149 @@ document.addEventListener(
             openTaskForm();
 
         }
+        if (
+    event.target &&
+    event.target.classList.contains(
+        "task-view-btn"
+    )
+) {
+
+    viewTask(
+        event.target.dataset.taskId
+    );
+
+}
+
+
+if (
+    event.target &&
+    event.target.classList.contains(
+        "task-delete-btn"
+    )
+) {
+
+    deleteTask(
+        event.target.dataset.taskId
+    );
+
+}
 
     }
 );
 
+// =====================================================
+// VIEW TASK
+// =====================================================
+
+function viewTask(taskId) {
+
+    const task =
+        taskState.tasks.find(
+            item => item.id === taskId
+        );
+
+    if (!task) {
+        alert("Task could not be found.");
+        return;
+    }
+
+    const dueDate =
+        taskDate(task.dueDate);
+
+    const formattedDate =
+        dueDate
+            ? dueDate.toLocaleDateString()
+            : "-";
+
+    alert(
+        "TASK DETAILS\n\n" +
+
+        "Title: " +
+        (task.title || "-") +
+
+        "\n\nDescription: " +
+        (task.description || "-") +
+
+        "\n\nAssigned To: " +
+        (task.assignedToName ||
+         task.assignedTo ||
+         "-") +
+
+        "\n\nMinistry: " +
+        (task.ministry || "-") +
+
+        "\n\nDue Date: " +
+        formattedDate +
+
+        "\n\nStatus: " +
+        (task.status || "Pending") +
+
+        "\n\nProgress: " +
+        getAutomaticProgress(task) +
+        "%"
+    );
+
+}
+// =====================================================
+// DELETE TASK
+// =====================================================
+
+async function deleteTask(taskId) {
+
+    const task =
+        taskState.tasks.find(
+            item => item.id === taskId
+        );
+
+    if (!task) {
+        alert("Task could not be found.");
+        return;
+    }
+
+    const confirmed =
+        confirm(
+            "Are you sure you want to delete this task?\n\n" +
+            (task.title || "Untitled task") +
+            "\n\nThis action cannot be undone."
+        );
+
+    if (!confirmed) {
+        return;
+    }
+
+    try {
+
+        const db =
+            firebase.firestore();
+
+        await db
+            .collection("tasks")
+            .doc(taskId)
+            .delete();
+
+        alert(
+            "Task deleted successfully."
+        );
+
+        await loadTasks();
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Failed to delete task:",
+            error
+        );
+
+        alert(
+            "Unable to delete task: " +
+            error.message
+        );
+
+    }
+
+}
 
 // =====================================================
 // INITIALIZE
