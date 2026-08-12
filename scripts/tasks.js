@@ -753,20 +753,50 @@ function renderTasks() {
             </td>
 
 
-            <td>
+           <td>
 
-                <strong>
+    <strong>
 
-                    ${getAutomaticProgress(task)}%
+        ${getAutomaticProgress(task)}%
 
-                </strong>
+    </strong>
 
-            </td>
+</td>
 
-        `;
 
-        table.appendChild(row);
+<td>
 
+    <button
+        type="button"
+        class="ghost-btn task-view-btn"
+        data-task-id="${task.id}"
+    >
+        View
+    </button>
+
+
+    <button
+        type="button"
+        class="secondary-btn task-edit-btn"
+        data-task-id="${task.id}"
+    >
+        Edit
+    </button>
+
+
+    <button
+        type="button"
+        class="ghost-btn task-delete-btn"
+        data-task-id="${task.id}"
+    >
+        Delete
+    </button>
+
+</td>
+
+`;
+
+table.appendChild(row);
     });
 
 }
