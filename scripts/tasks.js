@@ -1502,7 +1502,30 @@ document.addEventListener(
 
         }
 
+// ---------------------------------------------
+// EDIT TASK
+// ---------------------------------------------
 
+if (
+    event.target &&
+    event.target.classList.contains(
+        "task-edit-btn"
+    )
+) {
+
+    const taskId =
+        event.target.dataset.taskId;
+
+    console.log(
+        "Edit task:",
+        taskId
+    );
+
+    editTask(taskId);
+
+    return;
+
+}
         // ---------------------------------------------
         // DELETE TASK
         // ---------------------------------------------
@@ -1670,6 +1693,144 @@ async function deleteTask(taskId) {
 
         alert(
             "Unable to delete task: " +
+            error.message
+        );
+
+    }
+
+}
+// =====================================================
+// EDIT TASK
+// =====================================================
+
+function editTask(taskId) {
+
+    const task =
+        taskState.tasks.find(
+            item => item.id === taskId
+        );
+
+    if (!task) {
+
+        alert(
+            "Task could not be found."
+        );
+
+        return;
+
+    }
+
+    const title =
+        prompt(
+            "Edit task title:",
+            task.title || ""
+        );
+
+    if (title === null) {
+        return;
+    }
+
+    const description =
+        prompt(
+            "Edit task description:",
+            task.description || ""
+        );
+
+    if (description === null) {
+        return;
+    }
+
+    const dueDate =
+        prompt(
+            "Edit due date (YYYY-MM-DD):",
+            task.dueDate || ""
+        );
+
+    if (dueDate === null) {
+        return;
+    }
+
+    if (!title.trim()) {
+
+        alert(
+            "Task title cannot be empty."
+        );
+
+        return;
+
+    }
+
+    if (!dueDate.trim()) {
+
+        alert(
+            "Due date cannot be empty."
+        );
+
+        return;
+
+    }
+
+    saveEditedTask(
+        taskId,
+        title.trim(),
+        description.trim(),
+        dueDate.trim()
+    );
+
+}
+
+
+// =====================================================
+// SAVE EDITED TASK
+// =====================================================
+
+async function saveEditedTask(
+    taskId,
+    title,
+    description,
+    dueDate
+) {
+
+    try {
+
+        const db =
+            firebase.firestore();
+
+        await db
+            .collection("tasks")
+            .doc(taskId)
+            .update({
+
+                title: title,
+
+                description: description,
+
+                dueDate: dueDate,
+
+                updatedAt:
+                    firebase.firestore
+                        .FieldValue
+                        .serverTimestamp()
+
+            });
+
+        alert(
+            "Task updated successfully."
+        );
+
+        await loadTasks();
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Failed to update task:",
+            error
+        );
+
+        alert(
+            "Unable to update task: " +
             error.message
         );
 
