@@ -3,15 +3,10 @@
 // =====================================================
 
 const taskState = {
-
     tasks: [],
-
     members: [],
-
     ministries: [],
-
     currentUser: null
-
 };
 
 
@@ -27,9 +22,7 @@ function getTaskUser() {
             localStorage.getItem("gdmCurrentUser");
 
         if (storedUser) {
-
             return JSON.parse(storedUser);
-
         }
 
     } catch (error) {
@@ -42,7 +35,25 @@ function getTaskUser() {
     }
 
     return null;
+}
 
+
+// =====================================================
+// ESCAPE TEXT
+// =====================================================
+
+function escapeTaskText(value) {
+
+    if (value === null || value === undefined) {
+        return "";
+    }
+
+    return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
 
@@ -57,12 +68,10 @@ async function loadTasks() {
         const db =
             firebase.firestore();
 
-
         const snapshot =
             await db
                 .collection("tasks")
                 .get();
-
 
         taskState.tasks =
             snapshot.docs.map(doc => ({
@@ -73,12 +82,10 @@ async function loadTasks() {
 
             }));
 
-
         console.log(
             "GDM Tasks Loaded:",
             taskState.tasks
         );
-
 
         renderTaskStatistics();
 
@@ -109,12 +116,10 @@ async function loadTaskMembers() {
         const db =
             firebase.firestore();
 
-
         const snapshot =
             await db
                 .collection("members")
                 .get();
-
 
         taskState.members =
             snapshot.docs.map(doc => ({
@@ -124,7 +129,6 @@ async function loadTaskMembers() {
                 ...doc.data()
 
             }));
-
 
         console.log(
             "GDM Task Members Loaded:",
@@ -156,12 +160,10 @@ async function loadTaskMinistries() {
         const db =
             firebase.firestore();
 
-
         const snapshot =
             await db
                 .collection("ministries")
                 .get();
-
 
         taskState.ministries =
             snapshot.docs.map(doc => ({
@@ -171,7 +173,6 @@ async function loadTaskMinistries() {
                 ...doc.data()
 
             }));
-
 
         console.log(
             "GDM Task Ministries Loaded:",
@@ -198,9 +199,9 @@ async function loadTaskMinistries() {
 
 function taskDate(value) {
 
-    if (!value)
+    if (!value) {
         return null;
-
+    }
 
     if (
         value &&
@@ -211,10 +212,8 @@ function taskDate(value) {
 
     }
 
-
     const date =
         new Date(value);
-
 
     if (
         Number.isNaN(
@@ -225,7 +224,6 @@ function taskDate(value) {
         return null;
 
     }
-
 
     return date;
 
@@ -243,7 +241,6 @@ function getAutomaticProgress(task) {
             task.status || "Pending"
         ).toLowerCase();
 
-
     if (
         status === "completed" ||
         status === "complete" ||
@@ -254,7 +251,6 @@ function getAutomaticProgress(task) {
 
     }
 
-
     if (
         status === "in progress" ||
         status === "in-progress" ||
@@ -264,7 +260,6 @@ function getAutomaticProgress(task) {
         return 50;
 
     }
-
 
     return 0;
 
@@ -282,13 +277,10 @@ function isTaskCompleted(task) {
             task.status || ""
         ).toLowerCase();
 
-
     return (
 
         status === "completed" ||
-
         status === "complete" ||
-
         status === "done"
 
     );
@@ -310,20 +302,17 @@ function isTaskOverdue(task) {
 
     }
 
-
     const dueDate =
         taskDate(
             task.dueDate
         );
 
-
-    if (!dueDate)
+    if (!dueDate) {
         return false;
-
+    }
 
     return (
-        dueDate <
-        new Date()
+        dueDate < new Date()
     );
 
 }
@@ -343,20 +332,17 @@ function isTaskUpcoming(task) {
 
     }
 
-
     const dueDate =
         taskDate(
             task.dueDate
         );
 
-
-    if (!dueDate)
+    if (!dueDate) {
         return false;
-
+    }
 
     return (
-        dueDate >=
-        new Date()
+        dueDate >= new Date()
     );
 
 }
@@ -373,14 +359,12 @@ function isTaskDueToday(task) {
             task.dueDate
         );
 
-
-    if (!dueDate)
+    if (!dueDate) {
         return false;
-
+    }
 
     const today =
         new Date();
-
 
     return (
 
@@ -399,6 +383,25 @@ function isTaskDueToday(task) {
 
 
 // =====================================================
+// COUNTER
+// =====================================================
+
+function setTaskCounter(id, value) {
+
+    const element =
+        document.getElementById(id);
+
+    if (element) {
+
+        element.textContent =
+            String(value);
+
+    }
+
+}
+
+
+// =====================================================
 // RENDER STATISTICS
 // =====================================================
 
@@ -407,20 +410,15 @@ function renderTaskStatistics() {
     const tasks =
         taskState.tasks;
 
-
     const currentUser =
         taskState.currentUser;
-
 
     const allTasks =
         tasks.length;
 
-
     const myTasks =
         currentUser
-
             ?
-
             tasks.filter(task => {
 
                 return (
@@ -437,93 +435,58 @@ function renderTaskStatistics() {
                 );
 
             }).length
-
             :
-
             0;
-
 
     const dueToday =
         tasks.filter(
             isTaskDueToday
         ).length;
 
-
     const overdue =
         tasks.filter(
             isTaskOverdue
         ).length;
-
 
     const upcoming =
         tasks.filter(
             isTaskUpcoming
         ).length;
 
-
     const completed =
         tasks.filter(
             isTaskCompleted
         ).length;
-
 
     setTaskCounter(
         "allTasksCount",
         allTasks
     );
 
-
     setTaskCounter(
         "myTasksCount",
         myTasks
     );
-
 
     setTaskCounter(
         "dueTodayCount",
         dueToday
     );
 
-
     setTaskCounter(
         "overdueTasksCount",
         overdue
     );
-
 
     setTaskCounter(
         "upcomingTasksCount",
         upcoming
     );
 
-
     setTaskCounter(
         "completedTasksCount",
         completed
     );
-
-}
-
-
-// =====================================================
-// COUNTER
-// =====================================================
-
-function setTaskCounter(
-    id,
-    value
-) {
-
-    const element =
-        document.getElementById(id);
-
-
-    if (element) {
-
-        element.textContent =
-            String(value);
-
-    }
 
 }
 
@@ -539,32 +502,27 @@ function renderTasks() {
             "tasksTableBody"
         );
 
-
-    if (!table)
+    if (!table) {
         return;
-
+    }
 
     const filter =
         document.getElementById(
             "taskFilter"
         )?.value || "all";
 
-
     let tasks =
         [...taskState.tasks];
 
 
-    // ---------------------------------------------
+    // -------------------------------------------------
     // MY TASKS
-    // ---------------------------------------------
+    // -------------------------------------------------
 
-    if (
-        filter === "my"
-    ) {
+    if (filter === "my") {
 
         const user =
             taskState.currentUser;
-
 
         if (user) {
 
@@ -591,13 +549,11 @@ function renderTasks() {
     }
 
 
-    // ---------------------------------------------
+    // -------------------------------------------------
     // OVERDUE
-    // ---------------------------------------------
+    // -------------------------------------------------
 
-    if (
-        filter === "overdue"
-    ) {
+    if (filter === "overdue") {
 
         tasks =
             tasks.filter(
@@ -607,13 +563,11 @@ function renderTasks() {
     }
 
 
-    // ---------------------------------------------
+    // -------------------------------------------------
     // UPCOMING
-    // ---------------------------------------------
+    // -------------------------------------------------
 
-    if (
-        filter === "upcoming"
-    ) {
+    if (filter === "upcoming") {
 
         tasks =
             tasks.filter(
@@ -623,13 +577,11 @@ function renderTasks() {
     }
 
 
-    // ---------------------------------------------
+    // -------------------------------------------------
     // COMPLETED
-    // ---------------------------------------------
+    // -------------------------------------------------
 
-    if (
-        filter === "completed"
-    ) {
+    if (filter === "completed") {
 
         tasks =
             tasks.filter(
@@ -642,9 +594,9 @@ function renderTasks() {
     table.innerHTML = "";
 
 
-    // ---------------------------------------------
+    // -------------------------------------------------
     // EMPTY
-    // ---------------------------------------------
+    // -------------------------------------------------
 
     if (!tasks.length) {
 
@@ -667,176 +619,659 @@ function renderTasks() {
     }
 
 
-    // ---------------------------------------------
-// TASK ROWS
-// ---------------------------------------------
+    // -------------------------------------------------
+    // TASK ROWS
+    // -------------------------------------------------
+
     tasks.forEach(task => {
 
-    const row = document.createElement("tr");
+        const row =
+            document.createElement("tr");
 
-    const completed = isTaskCompleted(task);
+        const completed =
+            isTaskCompleted(task);
 
-    const overdue = isTaskOverdue(task);
+        const overdue =
+            isTaskOverdue(task);
 
-    const dueDate = taskDate(task.dueDate);
+        const dueDate =
+            taskDate(task.dueDate);
 
-    const formattedDate = dueDate
-        ? dueDate.toLocaleDateString()
-        : "-";
-
-
-    // =============================================
-    // TASK STATUS
-    // =============================================
-
-    let status = String(
-        task.status || "Pending"
-    );
+        const formattedDate =
+            dueDate
+                ?
+                dueDate.toLocaleDateString()
+                :
+                "-";
 
 
-    if (completed) {
+        let status =
+            String(
+                task.status || "Pending"
+            );
 
-        status = "Completed";
 
-    } else if (overdue) {
+        if (completed) {
 
-        status = "Overdue";
+            status =
+                "Completed";
+
+        }
+
+
+        row.innerHTML = `
+
+            <td>
+
+                <strong>
+
+                    ${
+                        escapeTaskText(
+                            task.title ||
+                            "Untitled task"
+                        )
+                    }
+
+                </strong>
+
+                <div>
+
+                    ${
+                        escapeTaskText(
+                            task.description ||
+                            ""
+                        )
+                    }
+
+                </div>
+
+            </td>
+
+
+            <td>
+
+                ${
+                    escapeTaskText(
+                        task.assignedToName ||
+                        task.assignedTo ||
+                        "-"
+                    )
+                }
+
+            </td>
+
+
+            <td>
+
+                ${
+                    escapeTaskText(
+                        task.ministry ||
+                        "-"
+                    )
+                }
+
+            </td>
+
+
+            <td>
+
+                ${formattedDate}
+
+            </td>
+
+
+            <td>
+
+                <select
+                    class="task-status-select"
+                    data-task-id="${task.id}"
+                >
+
+                    <option
+                        value="Pending"
+                        ${status === "Pending" ? "selected" : ""}
+                    >
+                        Pending
+                    </option>
+
+                    <option
+                        value="In Progress"
+                        ${status === "In Progress" ? "selected" : ""}
+                    >
+                        In Progress
+                    </option>
+
+                    <option
+                        value="Completed"
+                        ${status === "Completed" ? "selected" : ""}
+                    >
+                        Completed
+                    </option>
+
+                </select>
+
+            </td>
+
+
+            <td>
+
+                <strong>
+
+                    ${getAutomaticProgress(task)}%
+
+                </strong>
+
+            </td>
+
+        `;
+
+        table.appendChild(row);
+
+    });
+
+}
+
+
+// =====================================================
+// CREATE TASK FORM
+// =====================================================
+
+function createTaskForm() {
+
+    if (
+        document.getElementById(
+            "taskFormOverlay"
+        )
+    ) {
+
+        return;
 
     }
 
 
-    // =============================================
-    // AUTOMATIC PROGRESS
-    // =============================================
+    const overlay =
+        document.createElement("div");
 
-    const progress =
-        getAutomaticProgress(task);
+    overlay.id =
+        "taskFormOverlay";
 
+    overlay.innerHTML = `
 
-    // =============================================
-    // TASK ROW
-    // =============================================
+        <div
+            class="panel glass-panel"
+            style="
+                position:fixed;
+                inset:50% auto auto 50%;
+                transform:translate(-50%, -50%);
+                width:min(650px, 92vw);
+                max-height:90vh;
+                overflow-y:auto;
+                z-index:9999;
+                padding:25px;
+            "
+        >
 
-    row.innerHTML = `
+            <div class="section-header">
 
-        <td>
+                <div>
 
-            <strong>
+                    <p class="eyebrow">
+                        Task Management
+                    </p>
 
-                ${
-                    escapeTaskText(
-                        task.title ||
-                        "Untitled task"
-                    )
-                }
+                    <h2>
+                        Assign New Task
+                    </h2>
 
-            </strong>
+                </div>
 
-            <div>
-
-                ${
-                    escapeTaskText(
-                        task.description ||
-                        ""
-                    )
-                }
+                <button
+                    type="button"
+                    id="closeTaskFormButton"
+                    class="ghost-btn"
+                >
+                    ×
+                </button>
 
             </div>
 
-        </td>
+
+            <form id="taskForm">
 
 
-        <td>
+                <label style="display:block;margin-bottom:15px;">
 
-            ${
-                escapeTaskText(
-                    task.assignedToName ||
-                    task.assignedTo ||
-                    "-"
-                )
-            }
+                    Task Title
 
-        </td>
+                    <input
+                        id="taskTitle"
+                        type="text"
+                        required
+                        placeholder="Enter task title"
+                        style="width:100%;padding:10px;margin-top:6px;"
+                    >
 
-
-        <td>
-
-            ${
-                escapeTaskText(
-                    task.ministry ||
-                    "-"
-                )
-            }
-
-        </td>
+                </label>
 
 
-        <td>
+                <label style="display:block;margin-bottom:15px;">
 
-            ${formattedDate}
+                    Description
 
-        </td>
+                    <textarea
+                        id="taskDescription"
+                        rows="4"
+                        placeholder="Describe the task"
+                        style="width:100%;padding:10px;margin-top:6px;"
+                    ></textarea>
 
-
-        <td>
-
-            <select
-                class="task-status-select"
-                data-task-id="${task.id}"
-            >
-
-                <option
-                    value="Pending"
-                    ${status === "Pending" ? "selected" : ""}
-                >
-                    Pending
-                </option>
-
-                <option
-                    value="In Progress"
-                    ${status === "In Progress" ? "selected" : ""}
-                >
-                    In Progress
-                </option>
-
-                <option
-                    value="Completed"
-                    ${status === "Completed" ? "selected" : ""}
-                >
-                    Completed
-                </option>
-
-            </select>
-
-        </td>
+                </label>
 
 
-        <td>
+                <label style="display:block;margin-bottom:15px;">
 
-            <strong>
-                ${progress}%
-            </strong>
+                    Assign To
 
-        </td>
+                    <select
+                        id="taskAssignedTo"
+                        required
+                        style="width:100%;padding:10px;margin-top:6px;"
+                    >
+
+                        <option value="">
+                            Select member
+                        </option>
+
+                    </select>
+
+                </label>
+
+
+                <label style="display:block;margin-bottom:15px;">
+
+                    Ministry
+
+                    <select
+                        id="taskMinistry"
+                        required
+                        style="width:100%;padding:10px;margin-top:6px;"
+                    >
+
+                        <option value="">
+                            Select ministry
+                        </option>
+
+                    </select>
+
+                </label>
+
+
+                <label style="display:block;margin-bottom:15px;">
+
+                    Due Date
+
+                    <input
+                        id="taskDueDate"
+                        type="date"
+                        required
+                        style="width:100%;padding:10px;margin-top:6px;"
+                    >
+
+                </label>
+
+
+                <div class="form-actions">
+
+                    <button
+                        type="submit"
+                        class="primary-btn"
+                    >
+                        Save Task
+                    </button>
+
+
+                    <button
+                        type="button"
+                        id="cancelTaskFormButton"
+                        class="ghost-btn"
+                    >
+                        Cancel
+                    </button>
+
+                </div>
+
+
+            </form>
+
+        </div>
 
     `;
 
 
-    table.appendChild(row);
-
-});
-
-        renderTaskStatistics();
-
-        renderTasks();
+    document.body.appendChild(
+        overlay
+    );
 
 
-        closeTaskForm();
+    // -------------------------------------------------
+    // MEMBER OPTIONS
+    // -------------------------------------------------
+
+    const memberSelect =
+        document.getElementById(
+            "taskAssignedTo"
+        );
+
+
+    taskState.members.forEach(member => {
+
+        const option =
+            document.createElement("option");
+
+        const name =
+            member.name ||
+            member.fullName ||
+            member.displayName ||
+            member.email ||
+            "Unnamed member";
+
+        option.value =
+            member.uid ||
+            member.id ||
+            member.email ||
+            "";
+
+        option.textContent =
+            name;
+
+        option.dataset.name =
+            name;
+
+        memberSelect.appendChild(
+            option
+        );
+
+    });
+
+
+    // -------------------------------------------------
+    // MINISTRY OPTIONS
+    // -------------------------------------------------
+
+    const ministrySelect =
+        document.getElementById(
+            "taskMinistry"
+        );
+
+
+    taskState.ministries.forEach(ministry => {
+
+        const option =
+            document.createElement("option");
+
+        const name =
+            ministry.name ||
+            ministry.title ||
+            ministry.ministryName ||
+            ministry.id ||
+            "Unnamed ministry";
+
+        option.value =
+            name;
+
+        option.textContent =
+            name;
+
+        ministrySelect.appendChild(
+            option
+        );
+
+    });
+
+
+    // -------------------------------------------------
+    // EVENTS
+    // -------------------------------------------------
+
+    document
+        .getElementById(
+            "taskForm"
+        )
+        .addEventListener(
+            "submit",
+            saveNewTask
+        );
+
+
+    document
+        .getElementById(
+            "closeTaskFormButton"
+        )
+        .addEventListener(
+            "click",
+            closeTaskForm
+        );
+
+
+    document
+        .getElementById(
+            "cancelTaskFormButton"
+        )
+        .addEventListener(
+            "click",
+            closeTaskForm
+        );
+
+}
+
+
+// =====================================================
+// OPEN TASK FORM
+// =====================================================
+
+function openTaskForm() {
+
+    createTaskForm();
+
+    const overlay =
+        document.getElementById(
+            "taskFormOverlay"
+        );
+
+    if (overlay) {
+
+        overlay.style.display =
+            "block";
+
+    }
+
+}
+
+
+// =====================================================
+// CLOSE TASK FORM
+// =====================================================
+
+function closeTaskForm() {
+
+    const overlay =
+        document.getElementById(
+            "taskFormOverlay"
+        );
+
+    if (overlay) {
+
+        overlay.remove();
+
+    }
+
+}
+
+
+// =====================================================
+// SAVE NEW TASK
+// =====================================================
+
+async function saveNewTask(event) {
+
+    event.preventDefault();
+
+
+    try {
+
+        const db =
+            firebase.firestore();
+
+
+        const title =
+            document.getElementById(
+                "taskTitle"
+            ).value.trim();
+
+
+        const description =
+            document.getElementById(
+                "taskDescription"
+            ).value.trim();
+
+
+        const assignedSelect =
+            document.getElementById(
+                "taskAssignedTo"
+            );
+
+
+        const ministry =
+            document.getElementById(
+                "taskMinistry"
+            ).value;
+
+
+        const dueDate =
+            document.getElementById(
+                "taskDueDate"
+            ).value;
+
+
+        const assignedTo =
+            assignedSelect.value;
+
+
+        const assignedOption =
+            assignedSelect.options[
+                assignedSelect.selectedIndex
+            ];
+
+
+        const assignedToName =
+            assignedOption?.dataset?.name ||
+            assignedOption?.textContent ||
+            assignedTo;
+
+
+        if (!title) {
+
+            alert(
+                "Please enter a task title."
+            );
+
+            return;
+
+        }
+
+
+        if (!assignedTo) {
+
+            alert(
+                "Please select a member."
+            );
+
+            return;
+
+        }
+
+
+        if (!ministry) {
+
+            alert(
+                "Please select a ministry."
+            );
+
+            return;
+
+        }
+
+
+        if (!dueDate) {
+
+            alert(
+                "Please select a due date."
+            );
+
+            return;
+
+        }
+
+
+        const currentUser =
+            taskState.currentUser;
+
+
+        const task = {
+
+            title: title,
+
+            description: description,
+
+            assignedTo: assignedTo,
+
+            assignedToName: assignedToName,
+
+            ministry: ministry,
+
+            dueDate: dueDate,
+
+            status: "Pending",
+
+            progress: 0,
+
+            createdBy:
+                currentUser?.uid ||
+                currentUser?.email ||
+                "unknown",
+
+            createdByName:
+                currentUser?.displayName ||
+                currentUser?.email ||
+                "Admin",
+
+            createdAt:
+                firebase.firestore
+                    .FieldValue
+                    .serverTimestamp(),
+
+            updatedAt:
+                firebase.firestore
+                    .FieldValue
+                    .serverTimestamp()
+
+        };
+
+
+        await db
+            .collection("tasks")
+            .add(task);
 
 
         alert(
             "Task assigned successfully."
         );
+
+
+        closeTaskForm();
+
+
+        await loadTasks();
 
     }
 
@@ -859,12 +1294,119 @@ function renderTasks() {
 
 
 // =====================================================
-// FILTER
+// UPDATE TASK STATUS
+// =====================================================
+
+async function updateTaskStatus(
+    taskId,
+    newStatus
+) {
+
+    try {
+
+        const db =
+            firebase.firestore();
+
+
+        const progress =
+            getAutomaticProgress({
+                status: newStatus
+            });
+
+
+        await db
+            .collection("tasks")
+            .doc(taskId)
+            .update({
+
+                status: newStatus,
+
+                progress: progress,
+
+                updatedAt:
+                    firebase.firestore
+                        .FieldValue
+                        .serverTimestamp()
+
+            });
+
+
+        const task =
+            taskState.tasks.find(
+                item =>
+                    item.id === taskId
+            );
+
+
+        if (task) {
+
+            task.status =
+                newStatus;
+
+            task.progress =
+                progress;
+
+        }
+
+
+        renderTaskStatistics();
+
+        renderTasks();
+
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Failed to update task status:",
+            error
+        );
+
+
+        alert(
+            "Unable to update task status: " +
+            error.message
+        );
+
+
+        await loadTasks();
+
+    }
+
+}
+
+
+// =====================================================
+// STATUS CHANGE LISTENER
 // =====================================================
 
 document.addEventListener(
     "change",
     event => {
+
+        if (
+            event.target &&
+            event.target.classList.contains(
+                "task-status-select"
+            )
+        ) {
+
+            const taskId =
+                event.target.dataset.taskId;
+
+
+            const newStatus =
+                event.target.value;
+
+
+            updateTaskStatus(
+                taskId,
+                newStatus
+            );
+
+        }
+
 
         if (
             event.target &&
