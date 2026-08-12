@@ -440,8 +440,7 @@ if (typeof appState.renderDocuments === "function") {
 
 
 
-return dashboardData;
-};
+
       // ---------- Save Dashboard Data ----------
   appState.saveDashboardData = async function (data) {
 
