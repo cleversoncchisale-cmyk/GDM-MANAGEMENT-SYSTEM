@@ -922,29 +922,17 @@ if (typeof appState.renderDocuments === "function") {
 
 
 
-      }catch(error){
+          } catch (error) {
 
         console.warn(
-          "Report save failed:",
-          error
+            "Report save failed:",
+            error
         );
-
-
-      }
-
 
     }
 
-
     return entry;
 
-
-  };
-
-
-
-
-
-
+};
 
 })();
