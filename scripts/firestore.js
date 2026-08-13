@@ -403,47 +403,66 @@ window.gdmApp = window.gdmApp || {};
 
 
 
-    // Save local cache
-
+       // Save local cache
     appState.saveDashboardData(
       dashboardData
-);
+    );
 
 
-
-console.log(
-"GDM Dashboard Loaded:",
-dashboardData
-);
-
-
-document.dispatchEvent(
-new Event("GDM_DATA_READY")
-);
+    console.log(
+      "GDM Dashboard Loaded:",
+      dashboardData
+    );
 
 
-return dashboardData;
+    // Refresh pages after Firestore data loads
+    if (
+      typeof appState.renderMinistries === "function"
+    ) {
+      appState.renderMinistries();
+    }
 
 
-// Refresh pages after Firestore data loads
-if (typeof appState.renderMinistries === "function") {
-    appState.renderMinistries();
-}
-
-if (typeof appState.renderMembers === "function") {
-    appState.renderMembers();
-}
-
-if (typeof appState.renderDocuments === "function") {
-    appState.renderDocuments();
-}
+    if (
+      typeof appState.renderMembers === "function"
+    ) {
+      appState.renderMembers();
+    }
 
 
-return dashboardData;
+    if (
+      typeof appState.renderDocuments === "function"
+    ) {
+      appState.renderDocuments();
+    }
 
-      // ---------- Save Dashboard Data ----------
+
+    if (
+      typeof appState.renderActivity === "function"
+    ) {
+      appState.renderActivity();
+    }
+
+
+    if (
+      typeof appState.renderReports === "function"
+    ) {
+      appState.renderReports();
+    }
+
+
+    document.dispatchEvent(
+      new Event("GDM_DATA_READY")
+    );
+
+
+    return dashboardData;
+
+  };
+
+
+  // ---------- Save Dashboard Data ----------
   appState.saveDashboardData = async function (data) {
-
     appState.dashboardData = data;
 
 
