@@ -59,17 +59,38 @@ window.gdmApp = window.gdmApp || {};
 };
 
   appState.normalizeUser = function (user) {
-    const email = user.email || "guest@gdm.org";
-    const displayName = user.displayName || email.split("@")[0];
-    const role = appState.resolveUserRole(email);
+
+    const email =
+        user.email ||
+        "guest@gdm.org";
+
+    const displayName =
+        user.displayName ||
+        email.split("@")[0];
+
+    const role =
+        user.role ||
+        appState.resolveUserRole(email);
+
     return {
-      uid: user.uid || `demo-${Date.now()}`,
-      email,
-      displayName,
-      role,
-      photoURL: user.photoURL || null
+
+        uid:
+            user.uid ||
+            `demo-${Date.now()}`,
+
+        email,
+
+        displayName,
+
+        role,
+
+        photoURL:
+            user.photoURL ||
+            null
+
     };
-  };
+
+};
 
   appState.renderAuthState = function () {
     if (!authSection) return;
