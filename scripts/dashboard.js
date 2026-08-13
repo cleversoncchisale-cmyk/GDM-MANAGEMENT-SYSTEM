@@ -1195,29 +1195,37 @@ appState.renderDocuments = function(){
             );
 
 
-        const openButton =
-            doc.fileUrl
+       const documentActions =
+    doc.fileUrl
+    ?
+    `
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
 
-            ?
+        <a
+            href="${doc.fileUrl}"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="secondary-btn"
+        >
+            Open
+        </a>
 
-            `
-            <a
-                href="${doc.fileUrl}"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="secondary-btn"
-            >
-                Open
-            </a>
-            `
+        <a
+            href="${doc.fileUrl}"
+            download="${doc.fileName || doc.title || "document"}"
+            class="secondary-btn"
+        >
+            Download
+        </a>
 
-            :
-
-            `
-            <span>
-                Not available
-            </span>
-            `;
+    </div>
+    `
+    :
+    `
+    <span>
+        Not available
+    </span>
+    `;
 
 
         row.innerHTML = `
@@ -1243,8 +1251,8 @@ appState.renderDocuments = function(){
             </td>
 
             <td>
-                ${openButton}
-            </td>
+    ${documentActions}
+</td>
 
         `;
 
@@ -1537,15 +1545,178 @@ appState.renderMinistries();
 // UPLOAD DOCUMENT
 // =====================================================
 
-appState.uploadDocumentFile = async function(file){
+appState.uploadDocumentFile = async function(file) {
 
-    if(!file){
+    if (!file) {
         return;
     }
 
-    alert(
-        "Document upload is temporarily disabled while we switch to the free storage method."
-    );
+
+    // Make sure Firebase Storage is available
+    if (
+        !appState.storage ||
+        !appState.db
+    ) {
+
+        alert(
+            "Firebase Storage is not available."
+        );
+
+        return;
+
+    }
+
+
+    try {
+
+        // -----------------------------------------
+        // Prepare file information
+        // -----------------------------------------
+
+        const fileName =
+            file.name;
+
+        const safeFileName =
+            fileName.replace(
+                /[^a-zA-Z0-9._-]/g,
+                "_"
+            );
+
+        const storagePath =
+            "documents/" +
+            Date.now() +
+            "_" +
+            safeFileName;
+
+
+        // -----------------------------------------
+        // Upload to Firebase Storage
+        // -----------------------------------------
+
+        console.log(
+            "Uploading document:",
+            fileName
+        );
+
+
+        const storageRef =
+            appState.storage.ref(
+                storagePath
+            );
+
+
+        await storageRef.put(file);
+
+
+        // -----------------------------------------
+        // Get downloadable URL
+        // -----------------------------------------
+
+        const fileUrl =
+            await storageRef.getDownloadURL();
+
+
+        console.log(
+            "Document uploaded:",
+            fileUrl
+        );
+
+
+        // -----------------------------------------
+        // Save document information to Firestore
+        // -----------------------------------------
+
+        const documentEntry = {
+
+            title:
+                fileName,
+
+            fileName:
+                fileName,
+
+            ministry:
+                "General",
+
+            type:
+                file.type ||
+                "File",
+
+            size:
+                Math.round(
+                    file.size / 1024
+                ) + " KB",
+
+            fileUrl:
+                fileUrl,
+
+            storagePath:
+                storagePath,
+
+            uploadedAt:
+                new Date().toISOString(),
+
+            uploadedBy:
+                appState.currentUser?.email ||
+                "Admin"
+
+        };
+
+
+        const ref =
+            await appState.db
+                .collection("documents")
+                .add(documentEntry);
+
+
+        documentEntry.id =
+            ref.id;
+
+
+        // -----------------------------------------
+        // Update application state
+        // -----------------------------------------
+
+        appState.documents =
+            appState.documents || [];
+
+
+        appState.documents.push(
+            documentEntry
+        );
+
+
+        if (
+            typeof appState.renderDocuments ===
+            "function"
+        ) {
+
+            appState.renderDocuments();
+
+        }
+
+
+        alert(
+            "Document uploaded successfully."
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Document upload failed:",
+            error
+        );
+
+
+        alert(
+            "Document upload failed: " +
+            (
+                error.message ||
+                "Unknown error"
+            )
+        );
+
+    }
 
 };
 
