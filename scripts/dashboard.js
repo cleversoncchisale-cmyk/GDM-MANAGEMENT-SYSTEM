@@ -1623,6 +1623,20 @@ if(navButtons.length){
                 if(!target)
                     return;
 
+
+                if(!isSectionAllowed(target)){
+
+                    console.warn(
+                        "Access denied:",
+                        target,
+                        appState.currentUser?.role
+                    );
+
+                    return;
+
+                }
+
+
                 showSection(target);
 
             }
