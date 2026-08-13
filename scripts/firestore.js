@@ -439,7 +439,7 @@ if (typeof appState.renderDocuments === "function") {
 }
 
 
-
+return dashboardData;
 
       // ---------- Save Dashboard Data ----------
   appState.saveDashboardData = async function (data) {
@@ -880,54 +880,42 @@ if (typeof appState.renderDocuments === "function") {
 
 
   // ---------- Save Report ----------
-  appState.saveReportEntry = async function(report){
-
-
+appState.saveReportEntry = async function(report) {
 
     const entry = {
 
+        ...report,
 
-      ...report,
+        value:
+            Number(report.value) || 0,
 
-
-      value:
-        Number(report.value) || 0,
-
-
-      submittedAt:
-        new Date().toISOString()
-
-
+        submittedAt:
+            new Date().toISOString()
 
     };
 
+    if (
+        appState.db &&
+        !appState.mockMode
+    ) {
 
+        try {
 
-    if(
-      appState.db &&
-      !appState.mockMode
-    ){
+            const ref =
+                await appState.db
+                    .collection("reports")
+                    .add(entry);
 
+            entry.id = ref.id;
 
-      try{
+        } catch (error) {
 
+            console.warn(
+                "Report save failed:",
+                error
+            );
 
-        const ref =
-          await appState.db
-          .collection("reports")
-          .add(entry);
-
-
-        entry.id = ref.id;
-
-
-
-          } catch (error) {
-
-        console.warn(
-            "Report save failed:",
-            error
-        );
+        }
 
     }
 
