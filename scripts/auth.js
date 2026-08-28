@@ -1,3 +1,4 @@
+```javascript
 window.gdmApp = window.gdmApp || {};
 
 (function () {
@@ -8,7 +9,11 @@ window.gdmApp = window.gdmApp || {};
   // GDM AUTHENTICATION — SUPABASE
   // =========================================================
 
-  // ---------- Ensure utils exists ----------
+
+  // =========================================================
+  // ENSURE UTILS EXISTS
+  // =========================================================
+
   if (!appState.utils) {
 
     appState.utils = {
@@ -24,13 +29,14 @@ window.gdmApp = window.gdmApp || {};
             ? JSON.parse(raw)
             : fallback;
 
-        } catch (e) {
+        } catch (error) {
 
           return fallback;
 
         }
 
       },
+
 
       writeStorage: (key, value) => {
 
@@ -41,11 +47,11 @@ window.gdmApp = window.gdmApp || {};
             JSON.stringify(value)
           );
 
-        } catch (e) {
+        } catch (error) {
 
           console.warn(
-            "localStorage write failed",
-            e
+            "localStorage write failed:",
+            error
           );
 
         }
@@ -87,191 +93,13 @@ window.gdmApp = window.gdmApp || {};
 
 
   // =========================================================
-  // CHECK SUPABASE
-  // =========================================================
-
-  const supabase =
-    appState.supabase;
-
-  if (!supabase) {
-
-    console.error(
-      "❌ Supabase client is not available."
-    );
-
-    if (authMessage) {
-
-      authMessage.textContent =
-        "Authentication service is unavailable.";
-
-    }
-
-    return;
-
-  }
-
-
-  console.log(
-    "🟢 GDM Supabase authentication module loaded"
-  );
-
-
-  // =========================================================
-  // ROLE RESOLUTION
-  // =========================================================
-
-  appState.resolveUserRole = function (email) {
-
-    const normalized =
-      (email || "")
-        .toLowerCase()
-        .trim();
-
-
-    /*
-     * Temporary fallback.
-     *
-     * The real role should come from the
-     * Supabase profiles table.
-     */
-
-    if (normalized.includes("super")) {
-      return "Super Admin";
-    }
-
-    if (normalized.includes("admin")) {
-      return "Admin";
-    }
-
-    if (normalized.includes("member")) {
-      return "Member";
-    }
-
-    if (normalized.includes("viewer")) {
-      return "Viewer";
-    }
-
-    return "Viewer";
-
-  };
-
-
-  // =========================================================
-  // NORMALIZE USER
-  // =========================================================
-
-  appState.normalizeUser = function (user, profile) {
-
-    if (!user) {
-      return null;
-    }
-
-
-    const email =
-      user.email ||
-      "guest@gdm.org";
-
-
-    const metadata =
-      user.user_metadata || {};
-
-
-    const displayName =
-      profile?.display_name ||
-      profile?.full_name ||
-      metadata.display_name ||
-      metadata.full_name ||
-      metadata.name ||
-      email.split("@")[0];
-
-
-    /*
-     * Prefer the role stored in profiles.
-     * Fall back to metadata and finally
-     * the existing email-based compatibility rule.
-     */
-
-    const role =
-      profile?.role ||
-      metadata.role ||
-      appState.resolveUserRole(email);
-
-
-    return {
-
-      uid:
-        user.id ||
-        `demo-${Date.now()}`,
-
-      email,
-
-      displayName,
-
-      role,
-
-      photoURL:
-        metadata.avatar_url ||
-        metadata.picture ||
-        null
-
-    };
-
-  };
-
-
-  // =========================================================
-  // LOAD PROFILE
-  // =========================================================
-
-  appState.loadUserProfile = async function (user) {
-
-    if (!user) {
-      return null;
-    }
-
-
-    try {
-
-      const {
-        data,
-        error
-      } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .maybeSingle();
-
-
-      if (error) {
-
-        console.warn(
-          "Supabase profile lookup failed:",
-          error
-        );
-
-        return null;
-
-      }
-
-
-      return data || null;
-
-    } catch (error) {
-
-      console.warn(
-        "Supabase profile lookup error:",
-        error
-      );
-
-      return null;
-
-    }
-
-  };
-
-
-  // =========================================================
   // RENDER AUTH STATE
+  // =========================================================
+  //
+  // IMPORTANT:
+  // This function is defined BEFORE the Supabase check.
+  // Therefore dashboard.js can safely call it even if
+  // Supabase is temporarily unavailable.
   // =========================================================
 
   appState.renderAuthState = function () {
@@ -309,13 +137,245 @@ window.gdmApp = window.gdmApp || {};
 
 
       if (roleBadge) {
-        roleBadge.textContent = "Guest";
+
+        roleBadge.textContent =
+          "Guest";
+
       }
 
 
       if (userRoleLabel) {
-        userRoleLabel.textContent = "Viewer";
+
+        userRoleLabel.textContent =
+          "Viewer";
+
       }
+
+    }
+
+  };
+
+
+  // =========================================================
+  // ROLE RESOLUTION
+  // =========================================================
+
+  appState.resolveUserRole = function (email) {
+
+    const normalized =
+      (email || "")
+        .toLowerCase()
+        .trim();
+
+
+    /*
+     * Temporary compatibility fallback.
+     *
+     * The real role should come from the
+     * Supabase profiles table.
+     */
+
+    if (normalized.includes("super")) {
+
+      return "Super Admin";
+
+    }
+
+
+    if (normalized.includes("admin")) {
+
+      return "Admin";
+
+    }
+
+
+    if (normalized.includes("member")) {
+
+      return "Member";
+
+    }
+
+
+    if (normalized.includes("viewer")) {
+
+      return "Viewer";
+
+    }
+
+
+    return "Viewer";
+
+  };
+
+
+  // =========================================================
+  // NORMALIZE USER
+  // =========================================================
+
+  appState.normalizeUser = function (
+    user,
+    profile
+  ) {
+
+    if (!user) {
+
+      return null;
+
+    }
+
+
+    const email =
+      user.email ||
+      "guest@gdm.org";
+
+
+    const metadata =
+      user.user_metadata || {};
+
+
+    const displayName =
+      profile?.display_name ||
+      profile?.full_name ||
+      metadata.display_name ||
+      metadata.full_name ||
+      metadata.name ||
+      email.split("@")[0];
+
+
+    /*
+     * Priority:
+     *
+     * 1. profiles.role
+     * 2. user metadata role
+     * 3. email compatibility fallback
+     */
+
+    const role =
+      profile?.role ||
+      metadata.role ||
+      appState.resolveUserRole(email);
+
+
+    return {
+
+      uid:
+        user.id ||
+        `demo-${Date.now()}`,
+
+      email,
+
+      displayName,
+
+      role,
+
+      photoURL:
+        metadata.avatar_url ||
+        metadata.picture ||
+        null
+
+    };
+
+  };
+
+
+  // =========================================================
+  // CHECK SUPABASE
+  // =========================================================
+
+  const supabase =
+    appState.supabase;
+
+
+  if (!supabase) {
+
+    console.error(
+      "❌ Supabase client is not available."
+    );
+
+
+    if (authMessage) {
+
+      authMessage.textContent =
+        "Authentication service is unavailable.";
+
+    }
+
+
+    /*
+     * DO NOT RETURN HERE.
+     *
+     * renderAuthState and the other safe
+     * application functions must remain available.
+     */
+
+  } else {
+
+    console.log(
+      "🟢 GDM Supabase authentication module loaded"
+    );
+
+  }
+
+
+  // =========================================================
+  // LOAD PROFILE
+  // =========================================================
+
+  appState.loadUserProfile = async function (user) {
+
+    if (!user) {
+
+      return null;
+
+    }
+
+
+    if (!supabase) {
+
+      console.warn(
+        "Supabase unavailable. Profile lookup skipped."
+      );
+
+      return null;
+
+    }
+
+
+    try {
+
+      const {
+        data,
+        error
+      } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .maybeSingle();
+
+
+      if (error) {
+
+        console.warn(
+          "Supabase profile lookup failed:",
+          error
+        );
+
+        return null;
+
+      }
+
+
+      return data || null;
+
+
+    } catch (error) {
+
+      console.warn(
+        "Supabase profile lookup error:",
+        error
+      );
+
+      return null;
 
     }
 
@@ -332,7 +392,23 @@ window.gdmApp = window.gdmApp || {};
   ) {
 
     if (!authMessage) {
+
       return null;
+
+    }
+
+
+    if (!supabase) {
+
+      authMessage.textContent =
+        "Authentication service is unavailable.";
+
+      console.error(
+        "❌ Cannot sign in because Supabase is unavailable."
+      );
+
+      return null;
+
     }
 
 
@@ -366,7 +442,9 @@ window.gdmApp = window.gdmApp || {};
 
 
       if (error) {
+
         throw error;
+
       }
 
 
@@ -430,6 +508,7 @@ window.gdmApp = window.gdmApp || {};
         error.message ||
         "Unable to sign in.";
 
+
       return null;
 
     }
@@ -444,7 +523,23 @@ window.gdmApp = window.gdmApp || {};
   appState.signInWithGoogle = async function () {
 
     if (!authMessage) {
+
       return null;
+
+    }
+
+
+    if (!supabase) {
+
+      authMessage.textContent =
+        "Authentication service is unavailable.";
+
+      console.error(
+        "❌ Cannot use Google sign-in because Supabase is unavailable."
+      );
+
+      return null;
+
     }
 
 
@@ -463,7 +558,8 @@ window.gdmApp = window.gdmApp || {};
         error
       } = await supabase.auth.signInWithOAuth({
 
-        provider: "google",
+        provider:
+          "google",
 
         options: {
 
@@ -475,7 +571,9 @@ window.gdmApp = window.gdmApp || {};
 
 
       if (error) {
+
         throw error;
+
       }
 
 
@@ -500,6 +598,7 @@ window.gdmApp = window.gdmApp || {};
         error.message ||
         "Google sign-in failed.";
 
+
       return null;
 
     }
@@ -516,7 +615,19 @@ window.gdmApp = window.gdmApp || {};
   ) {
 
     if (!authMessage) {
+
       return;
+
+    }
+
+
+    if (!supabase) {
+
+      authMessage.textContent =
+        "Authentication service is unavailable.";
+
+      return;
+
     }
 
 
@@ -556,7 +667,9 @@ window.gdmApp = window.gdmApp || {};
 
 
       if (error) {
+
         throw error;
+
       }
 
 
@@ -587,29 +700,36 @@ window.gdmApp = window.gdmApp || {};
 
   appState.signOut = async function () {
 
-    try {
+    if (supabase) {
 
-      const {
-        error
-      } = await supabase.auth.signOut();
+      try {
+
+        const {
+          error
+        } = await supabase.auth.signOut();
 
 
-      if (error) {
-        throw error;
+        if (error) {
+
+          throw error;
+
+        }
+
+
+      } catch (error) {
+
+        console.warn(
+          "Supabase sign out failed:",
+          error
+        );
+
       }
-
-
-    } catch (error) {
-
-      console.warn(
-        "Supabase sign out failed:",
-        error
-      );
 
     }
 
 
-    appState.currentUser = null;
+    appState.currentUser =
+      null;
 
 
     appState.utils.writeStorage(
@@ -643,7 +763,8 @@ window.gdmApp = window.gdmApp || {};
 
     if (!user) {
 
-      appState.currentUser = null;
+      appState.currentUser =
+        null;
 
 
       appState.utils.writeStorage(
@@ -718,67 +839,71 @@ window.gdmApp = window.gdmApp || {};
   // SUPABASE AUTH STATE LISTENER
   // =========================================================
 
-  supabase.auth.onAuthStateChange(
-    async (event, session) => {
+  if (supabase) {
 
-      console.log(
-        "🔐 Supabase auth event:",
-        event
-      );
+    supabase.auth.onAuthStateChange(
+      async (event, session) => {
 
+        console.log(
+          "🔐 Supabase auth event:",
+          event
+        );
 
-      /*
-       * Do not perform unnecessary database
-       * work during token refresh events.
-       */
-
-      if (
-        event === "TOKEN_REFRESHED"
-      ) {
-
-        return;
-
-      }
-
-
-      if (session?.user) {
 
         /*
-         * Avoid duplicate initialization
-         * when login functions have already
-         * established currentUser.
+         * Do not perform unnecessary database
+         * work during token refresh events.
          */
 
         if (
-          !appState.currentUser ||
-          appState.currentUser.uid !==
-            session.user.id
+          event === "TOKEN_REFRESHED"
+        ) {
+
+          return;
+
+        }
+
+
+        if (session?.user) {
+
+          /*
+           * Avoid duplicate initialization
+           * when login functions have already
+           * established currentUser.
+           */
+
+          if (
+            !appState.currentUser ||
+            appState.currentUser.uid !==
+              session.user.id
+          ) {
+
+            await appState.handleSupabaseUser(
+              session.user
+            );
+
+          }
+
+          return;
+
+        }
+
+
+        if (
+          event === "SIGNED_OUT" ||
+          event === "INITIAL_SESSION"
         ) {
 
           await appState.handleSupabaseUser(
-            session.user
+            null
           );
 
         }
 
-        return;
-
       }
+    );
 
-
-      if (
-        event === "SIGNED_OUT" ||
-        event === "INITIAL_SESSION"
-      ) {
-
-        await appState.handleSupabaseUser(
-          null
-        );
-
-      }
-
-    }
-  );
+  }
 
 
   // =========================================================
@@ -795,10 +920,15 @@ window.gdmApp = window.gdmApp || {};
 
 
         const emailField =
-          document.getElementById("email");
+          document.getElementById(
+            "email"
+          );
+
 
         const passwordField =
-          document.getElementById("password");
+          document.getElementById(
+            "password"
+          );
 
 
         if (
@@ -820,6 +950,7 @@ window.gdmApp = window.gdmApp || {};
 
         const email =
           emailField.value.trim();
+
 
         const password =
           passwordField.value;
@@ -865,7 +996,9 @@ window.gdmApp = window.gdmApp || {};
       () => {
 
         const emailField =
-          document.getElementById("email");
+          document.getElementById(
+            "email"
+          );
 
 
         const email =
@@ -902,64 +1035,140 @@ window.gdmApp = window.gdmApp || {};
   // RESTORE EXISTING SESSION
   // =========================================================
 
-  (async function restoreSession() {
+  if (supabase) {
 
-    try {
+    (async function restoreSession() {
 
-      const {
-        data,
-        error
-      } =
-        await supabase.auth.getSession();
+      try {
 
-
-      if (error) {
-        throw error;
-      }
+        const {
+          data,
+          error
+        } =
+          await supabase.auth.getSession();
 
 
-      if (data?.session?.user) {
+        if (error) {
 
-        await appState.handleSupabaseUser(
-          data.session.user
+          throw error;
+
+        }
+
+
+        if (data?.session?.user) {
+
+          await appState.handleSupabaseUser(
+            data.session.user
+          );
+
+        } else {
+
+          appState.currentUser =
+            null;
+
+
+          appState.utils.writeStorage(
+            "gdmCurrentUser",
+            null
+          );
+
+
+          appState.renderAuthState();
+
+
+          if (
+            location.pathname.includes(
+              "/gdm-dashboard/"
+            )
+          ) {
+
+            location.href =
+              "../../index.html";
+
+          }
+
+        }
+
+
+      } catch (error) {
+
+        console.error(
+          "❌ Failed to restore Supabase session:",
+          error
         );
 
-      } else {
+      }
 
-        appState.currentUser = null;
+    })();
 
-        appState.utils.writeStorage(
+  } else {
+
+    /*
+     * Supabase is unavailable.
+     * Still render the authentication UI
+     * safely instead of crashing.
+     */
+
+    appState.currentUser =
+      appState.utils.readStorage(
+        "gdmCurrentUser",
+        null
+      );
+
+
+    appState.renderAuthState();
+
+  }
+
+
+  // =========================================================
+  // DOM READY
+  // =========================================================
+
+  document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+      /*
+       * Restore cached user information
+       * if available.
+       */
+
+      const storedUser =
+        appState.utils.readStorage(
           "gdmCurrentUser",
           null
         );
 
-        appState.renderAuthState();
 
+      if (storedUser) {
 
-        if (
-          location.pathname.includes(
-            "/gdm-dashboard/"
-          )
-        ) {
-
-          location.href =
-            "../../index.html";
-
-        }
+        appState.currentUser =
+          storedUser;
 
       }
 
 
-    } catch (error) {
+      /*
+       * These functions now always exist,
+       * even when Supabase is unavailable.
+       */
 
-      console.error(
-        "❌ Failed to restore Supabase session:",
-        error
-      );
+      appState.renderAuthState();
+
+
+      if (
+        typeof appState.updateNavPermissions ===
+        "function"
+      ) {
+
+        appState.updateNavPermissions();
+
+      }
 
     }
-
-  })();
+  );
 
 
 })();
+```
