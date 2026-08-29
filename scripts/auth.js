@@ -1,34 +1,3 @@
-/
-====================================================
- GOOD DEEDS MINISTRIES MANAGEMENT SYSTEM
- Authentication Module
- Supabase Authentication
-====================================================
-
- RESPONSIBILITIES:
- - Supabase authentication
- - Session restoration
- - Profile loading
- - Role normalization
- - Current-user state
- - Login / logout
- - Google authentication
- - Password reset
- - Authentication UI
-
- IMPORTANT:
- Supabase session is the source of truth.
- profiles.role determines the GDM role.
-
- ALLOWED ROLES:
- super_admin
- admin
- ministry_leader
- staff
- viewer
-====================================================
-*/
-
 window.gdmApp = window.gdmApp || {};
 
 (function () {
@@ -45,7 +14,7 @@ window.gdmApp = window.gdmApp || {};
 
         appState.utils = {
 
-            readStorage(key, fallback = null) {
+            readStorage: function (key, fallback) {
 
                 try {
 
@@ -53,7 +22,7 @@ window.gdmApp = window.gdmApp || {};
                         localStorage.getItem(key);
 
                     if (!raw) {
-                        return fallback;
+                        return fallback ?? null;
                     }
 
                     return JSON.parse(raw);
@@ -65,12 +34,12 @@ window.gdmApp = window.gdmApp || {};
                         error
                     );
 
-                    return fallback;
+                    return fallback ?? null;
                 }
 
             },
 
-            writeStorage(key, value) {
+            writeStorage: function (key, value) {
 
                 try {
 
@@ -95,6 +64,7 @@ window.gdmApp = window.gdmApp || {};
                         "localStorage write failed:",
                         error
                     );
+
                 }
 
             }
@@ -105,20 +75,23 @@ window.gdmApp = window.gdmApp || {};
 
 
     // =================================================
-    // SUPABASE CLIENT
+    // SUPABASE
     // =================================================
 
     function getSupabase() {
 
         if (appState.supabase) {
+
             return appState.supabase;
+
         }
 
         console.error(
-            "❌ GDM Supabase client is not available."
+            "GDM Supabase client is not available."
         );
 
         return null;
+
     }
 
 
@@ -129,15 +102,16 @@ window.gdmApp = window.gdmApp || {};
     if (!supabase) {
 
         console.error(
-            "❌ Authentication module stopped because Supabase is unavailable."
+            "Authentication module stopped because Supabase is unavailable."
         );
 
         return;
+
     }
 
 
     console.log(
-        "🟢 GDM Supabase authentication module loaded"
+        "GDM Supabase authentication module loaded"
     );
 
 
@@ -227,12 +201,15 @@ window.gdmApp = window.gdmApp || {};
 
             };
 
+            const normalized =
+                String(
+                    role || ""
+                )
+                .trim()
+                .toLowerCase();
+
             return (
-                labels[
-                    String(role || "")
-                        .trim()
-                        .toLowerCase()
-                ] ||
+                labels[normalized] ||
                 "Viewer"
             );
 
@@ -247,13 +224,15 @@ window.gdmApp = window.gdmApp || {};
         function (role) {
 
             const normalized =
-                String(role || "")
-                    .trim()
-                    .toLowerCase()
-                    .replace(
-                        /[\s-]+/g,
-                        "_"
-                    );
+                String(
+                    role || ""
+                )
+                .trim()
+                .toLowerCase()
+                .replace(
+                    /[\s-]+/g,
+                    "_"
+                );
 
             if (
                 GDM_ROLES.includes(
@@ -266,7 +245,7 @@ window.gdmApp = window.gdmApp || {};
             }
 
             console.warn(
-                "⚠️ Invalid or missing GDM role:",
+                "Invalid or missing GDM role:",
                 role
             );
 
@@ -289,16 +268,13 @@ window.gdmApp = window.gdmApp || {};
                 return null;
             }
 
-
             const metadata =
                 authUser.user_metadata ||
                 {};
 
-
             const email =
                 authUser.email ||
                 "";
-
 
             const displayName =
                 profile?.display_name ||
@@ -309,12 +285,10 @@ window.gdmApp = window.gdmApp || {};
                 email.split("@")[0] ||
                 "GDM User";
 
-
             const role =
                 appState.normalizeRole(
                     profile?.role
                 );
-
 
             return {
 
@@ -353,12 +327,13 @@ window.gdmApp = window.gdmApp || {};
     // =================================================
 
     appState.loadUserProfile =
-        async function (authUser) {
+        async function (
+            authUser
+        ) {
 
             if (!authUser?.id) {
                 return null;
             }
-
 
             try {
 
@@ -374,11 +349,10 @@ window.gdmApp = window.gdmApp || {};
                     )
                     .maybeSingle();
 
-
                 if (error) {
 
                     console.error(
-                        "❌ Profile lookup failed:",
+                        "Profile lookup failed:",
                         error
                     );
 
@@ -386,13 +360,12 @@ window.gdmApp = window.gdmApp || {};
 
                 }
 
-
                 return data || null;
 
             } catch (error) {
 
                 console.error(
-                    "❌ Profile lookup exception:",
+                    "Profile lookup exception:",
                     error
                 );
 
@@ -412,7 +385,6 @@ window.gdmApp = window.gdmApp || {};
 
             appState.currentUser =
                 user || null;
-
 
             if (user) {
 
@@ -463,7 +435,6 @@ window.gdmApp = window.gdmApp || {};
             const user =
                 appState.currentUser;
 
-
             if (user) {
 
                 if (authSection) {
@@ -474,11 +445,9 @@ window.gdmApp = window.gdmApp || {};
 
                 }
 
-
                 const role =
                     user.role ||
                     "viewer";
-
 
                 const label =
                     user.roleLabel ||
@@ -486,14 +455,12 @@ window.gdmApp = window.gdmApp || {};
                         role
                     );
 
-
                 if (roleBadge) {
 
                     roleBadge.textContent =
                         label;
 
                 }
-
 
                 if (userRoleLabel) {
 
@@ -512,14 +479,12 @@ window.gdmApp = window.gdmApp || {};
 
                 }
 
-
                 if (roleBadge) {
 
                     roleBadge.textContent =
                         "Guest";
 
                 }
-
 
                 if (userRoleLabel) {
 
@@ -538,14 +503,15 @@ window.gdmApp = window.gdmApp || {};
     // =================================================
 
     appState.handleSupabaseUser =
-        async function (authUser) {
+        async function (
+            authUser
+        ) {
 
             if (!authUser) {
 
                 clearCurrentUser();
 
                 appState.renderAuthState();
-
 
                 if (
                     typeof appState.updateNavPermissions ===
@@ -556,34 +522,28 @@ window.gdmApp = window.gdmApp || {};
 
                 }
 
-
                 return null;
 
             }
 
-
             console.log(
-                "🔐 Loading GDM profile for:",
+                "Loading GDM profile for:",
                 authUser.email
             );
 
-
             appState.supabaseUser =
                 authUser;
-
 
             const profile =
                 await appState.loadUserProfile(
                     authUser
                 );
 
-
             if (!profile) {
 
                 console.error(
-                    "❌ Authenticated user has no GDM profile."
+                    "Authenticated user has no GDM profile."
                 );
-
 
                 try {
 
@@ -598,11 +558,9 @@ window.gdmApp = window.gdmApp || {};
 
                 }
 
-
                 clearCurrentUser();
 
                 appState.renderAuthState();
-
 
                 if (authMessage) {
 
@@ -611,11 +569,9 @@ window.gdmApp = window.gdmApp || {};
 
                 }
 
-
                 return null;
 
             }
-
 
             const normalizedUser =
                 appState.normalizeUser(
@@ -623,14 +579,11 @@ window.gdmApp = window.gdmApp || {};
                     profile
                 );
 
-
             appState.setCurrentUser(
                 normalizedUser
             );
 
-
             appState.renderAuthState();
-
 
             if (
                 typeof appState.updateNavPermissions ===
@@ -640,15 +593,6 @@ window.gdmApp = window.gdmApp || {};
                 appState.updateNavPermissions();
 
             }
-
-
-            /*
-             * Dashboard initialization belongs to
-             * dashboard.js.
-             *
-             * We call it only after authentication
-             * and profile loading are complete.
-             */
 
             if (
                 typeof appState.initializeApp ===
@@ -662,14 +606,13 @@ window.gdmApp = window.gdmApp || {};
                 } catch (error) {
 
                     console.error(
-                        "❌ Dashboard initialization after authentication failed:",
+                        "Dashboard initialization after authentication failed:",
                         error
                     );
 
                 }
 
             }
-
 
             return normalizedUser;
 
@@ -689,10 +632,9 @@ window.gdmApp = window.gdmApp || {};
             if (authMessage) {
 
                 authMessage.textContent =
-                    "Authenticating…";
+                    "Authenticating...";
 
             }
-
 
             if (
                 !email ||
@@ -710,7 +652,6 @@ window.gdmApp = window.gdmApp || {};
 
             }
 
-
             try {
 
                 const {
@@ -726,11 +667,9 @@ window.gdmApp = window.gdmApp || {};
 
                     });
 
-
                 if (error) {
                     throw error;
                 }
-
 
                 if (!data?.user) {
 
@@ -740,26 +679,14 @@ window.gdmApp = window.gdmApp || {};
 
                 }
 
-
-                /*
-                 * The auth listener will normally
-                 * process the session.
-                 *
-                 * We explicitly process the user here
-                 * as well so the application becomes
-                 * responsive immediately.
-                 */
-
                 const user =
                     await appState.handleSupabaseUser(
                         data.user
                     );
 
-
                 if (!user) {
                     return null;
                 }
-
 
                 if (authMessage) {
 
@@ -768,16 +695,14 @@ window.gdmApp = window.gdmApp || {};
 
                 }
 
-
                 return user;
 
             } catch (error) {
 
                 console.error(
-                    "❌ Supabase sign-in failed:",
+                    "Supabase sign-in failed:",
                     error
                 );
-
 
                 if (authMessage) {
 
@@ -786,7 +711,6 @@ window.gdmApp = window.gdmApp || {};
                         "Unable to sign in.";
 
                 }
-
 
                 return null;
 
@@ -805,16 +729,15 @@ window.gdmApp = window.gdmApp || {};
             if (authMessage) {
 
                 authMessage.textContent =
-                    "Signing in with Google…";
+                    "Signing in with Google...";
 
             }
-
 
             try {
 
                 const redirectTo =
-                    window.location.href;
-
+                    window.location.origin +
+                    window.location.pathname;
 
                 const {
                     data,
@@ -833,21 +756,18 @@ window.gdmApp = window.gdmApp || {};
 
                     });
 
-
                 if (error) {
                     throw error;
                 }
-
 
                 return data || null;
 
             } catch (error) {
 
                 console.error(
-                    "❌ Google sign-in failed:",
+                    "Google sign-in failed:",
                     error
                 );
-
 
                 if (authMessage) {
 
@@ -856,7 +776,6 @@ window.gdmApp = window.gdmApp || {};
                         "Google sign-in failed.";
 
                 }
-
 
                 return null;
 
@@ -870,7 +789,9 @@ window.gdmApp = window.gdmApp || {};
     // =================================================
 
     appState.sendPasswordReset =
-        async function (email) {
+        async function (
+            email
+        ) {
 
             if (!email) {
 
@@ -885,21 +806,18 @@ window.gdmApp = window.gdmApp || {};
 
             }
 
-
             if (authMessage) {
 
                 authMessage.textContent =
-                    "Sending password reset link…";
+                    "Sending password reset link...";
 
             }
-
 
             try {
 
                 const redirectTo =
-    window.location.origin +
-    window.location.pathname;
-
+                    window.location.origin +
+                    window.location.pathname;
 
                 const {
                     error
@@ -911,11 +829,9 @@ window.gdmApp = window.gdmApp || {};
                         }
                     );
 
-
                 if (error) {
                     throw error;
                 }
-
 
                 if (authMessage) {
 
@@ -924,16 +840,14 @@ window.gdmApp = window.gdmApp || {};
 
                 }
 
-
                 return true;
 
             } catch (error) {
 
                 console.error(
-                    "❌ Password reset failed:",
+                    "Password reset failed:",
                     error
                 );
-
 
                 if (authMessage) {
 
@@ -942,7 +856,6 @@ window.gdmApp = window.gdmApp || {};
                         "Could not send password reset email.";
 
                 }
-
 
                 return false;
 
@@ -965,7 +878,6 @@ window.gdmApp = window.gdmApp || {};
                 } = await supabase.auth
                     .signOut();
 
-
                 if (error) {
                     throw error;
                 }
@@ -979,11 +891,9 @@ window.gdmApp = window.gdmApp || {};
 
             }
 
-
             clearCurrentUser();
 
             appState.renderAuthState();
-
 
             if (
                 typeof appState.updateNavPermissions ===
@@ -993,12 +903,6 @@ window.gdmApp = window.gdmApp || {};
                 appState.updateNavPermissions();
 
             }
-
-
-            /*
-             * If this is the dashboard page,
-             * return to the main login page.
-             */
 
             if (
                 window.location.pathname.includes(
@@ -1026,18 +930,15 @@ window.gdmApp = window.gdmApp || {};
 
                 event.preventDefault();
 
-
                 const emailField =
                     document.getElementById(
                         "email"
                     );
 
-
                 const passwordField =
                     document.getElementById(
                         "password"
                     );
-
 
                 if (
                     !emailField ||
@@ -1054,7 +955,6 @@ window.gdmApp = window.gdmApp || {};
                     return;
 
                 }
-
 
                 await appState.signIn(
                     emailField.value.trim(),
@@ -1100,12 +1000,10 @@ window.gdmApp = window.gdmApp || {};
                         "email"
                     );
 
-
                 const email =
                     emailField
                         ? emailField.value.trim()
                         : "";
-
 
                 await appState.sendPasswordReset(
                     email
@@ -1118,7 +1016,7 @@ window.gdmApp = window.gdmApp || {};
 
 
     // =================================================
-    // LOGOUT BUTTON
+    // LOGOUT
     // =================================================
 
     if (logoutBtn) {
@@ -1136,7 +1034,7 @@ window.gdmApp = window.gdmApp || {};
 
 
     // =================================================
-    // SUPABASE AUTH STATE LISTENER
+    // AUTH STATE LISTENER
     // =================================================
 
     supabase.auth.onAuthStateChange(
@@ -1146,14 +1044,9 @@ window.gdmApp = window.gdmApp || {};
         ) {
 
             console.log(
-                "🔐 Supabase auth event:",
+                "Supabase auth event:",
                 event
             );
-
-
-            /*
-             * SIGNED OUT
-             */
 
             if (
                 event === "SIGNED_OUT"
@@ -1162,7 +1055,6 @@ window.gdmApp = window.gdmApp || {};
                 clearCurrentUser();
 
                 appState.renderAuthState();
-
 
                 if (
                     typeof appState.updateNavPermissions ===
@@ -1173,25 +1065,13 @@ window.gdmApp = window.gdmApp || {};
 
                 }
 
-
                 return;
 
             }
 
-
-            /*
-             * AUTHENTICATED SESSION
-             */
-
             if (
                 session?.user
             ) {
-
-                /*
-                 * Avoid unnecessary profile
-                 * reload when the same user is
-                 * already loaded.
-                 */
 
                 if (
                     !appState.currentUser ||
@@ -1228,7 +1108,7 @@ window.gdmApp = window.gdmApp || {};
 
 
     // =================================================
-    // RESTORE SUPABASE SESSION
+    // RESTORE SESSION
     // =================================================
 
     async function restoreSession() {
@@ -1241,11 +1121,9 @@ window.gdmApp = window.gdmApp || {};
             } = await supabase.auth
                 .getSession();
 
-
             if (error) {
                 throw error;
             }
-
 
             if (
                 data?.session?.user
@@ -1266,10 +1144,9 @@ window.gdmApp = window.gdmApp || {};
         } catch (error) {
 
             console.error(
-                "❌ Failed to restore Supabase session:",
+                "Failed to restore Supabase session:",
                 error
             );
-
 
             clearCurrentUser();
 
@@ -1313,7 +1190,7 @@ window.gdmApp = window.gdmApp || {};
 
 
     console.log(
-        "🟢 GDM authentication system ready"
+        "GDM authentication system ready"
     );
 
 })();
