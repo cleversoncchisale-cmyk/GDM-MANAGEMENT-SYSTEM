@@ -1,4 +1,4 @@
-/*
+/
 ====================================================
  GOOD DEEDS MINISTRIES MANAGEMENT SYSTEM
  Authentication Module
