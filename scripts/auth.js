@@ -898,7 +898,8 @@ window.gdmApp = window.gdmApp || {};
             try {
 
                 const redirectTo =
-                    `${window.location.origin}${window.location.pathname}`;
+    window.location.origin +
+    window.location.pathname;
 
 
                 const {
