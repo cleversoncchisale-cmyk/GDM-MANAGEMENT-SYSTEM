@@ -4,15 +4,6 @@
  Authentication Module
  Supabase Authentication
 ====================================================
-*/
-
-window.gdmApp = window.gdmApp || {};
-
-(function () {
-
-    "use strict";
-
-    const appState = window.gdmApp;
 
  RESPONSIBILITIES:
  - Supabase authentication
