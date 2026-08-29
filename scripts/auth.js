@@ -1317,4 +1317,3 @@ window.gdmApp = window.gdmApp || {};
     );
 
 })();
-```
