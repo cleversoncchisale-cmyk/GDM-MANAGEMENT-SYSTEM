@@ -1,8 +1,7 @@
-```javascript
 /*
 ====================================================
  GOOD DEEDS MINISTRIES MANAGEMENT SYSTEM
- Dashboard Module
+ Dashboard Module (FIXED)
  Supabase Database + Supabase Storage
 ====================================================
 
@@ -477,30 +476,30 @@ window.gdmApp = window.gdmApp || {};
 
     function showToast(message, type = "info") {
 
-    const stack = document.getElementById("toastStack");
+        const stack = document.getElementById("toastStack");
 
-    if (!stack) {
-        console.log("[" + type + "]", message);
-        return;
-    }
+        if (!stack) {
+            console.log("[" + type + "]", message);
+            return;
+        }
 
-    const toast = document.createElement("div");
+        const toast = document.createElement("div");
 
-    toast.className = "toast toast-" + type;
-    toast.textContent = message;
+        toast.className = "toast toast-" + type;
+        toast.textContent = message;
 
-    stack.appendChild(toast);
-
-    setTimeout(function () {
-
-        toast.classList.add("hide");
+        stack.appendChild(toast);
 
         setTimeout(function () {
-            toast.remove();
-        }, 300);
 
-    }, 3500);
-}
+            toast.classList.add("hide");
+
+            setTimeout(function () {
+                toast.remove();
+            }, 300);
+
+        }, 3500);
+    }
 
 
     appState.showToast =
@@ -565,26 +564,26 @@ window.gdmApp = window.gdmApp || {};
 
     function formatFileSize(bytes) {
 
-    const size = Number(bytes);
+        const size = Number(bytes);
 
-    if (!size || size <= 0) {
-        return "-";
+        if (!size || size <= 0) {
+            return "-";
+        }
+
+        if (size < 1024) {
+            return size + " B";
+        }
+
+        if (size < 1024 * 1024) {
+            return (size / 1024).toFixed(1) + " KB";
+        }
+
+        if (size < 1024 * 1024 * 1024) {
+            return (size / (1024 * 1024)).toFixed(1) + " MB";
+        }
+
+        return (size / (1024 * 1024 * 1024)).toFixed(1) + " GB";
     }
-
-    if (size < 1024) {
-        return size + " B";
-    }
-
-    if (size < 1024 * 1024) {
-        return (size / 1024).toFixed(1) + " KB";
-    }
-
-    if (size < 1024 * 1024 * 1024) {
-        return (size / (1024 * 1024)).toFixed(1) + " MB";
-    }
-
-    return (size / (1024 * 1024 * 1024)).toFixed(1) + " GB";
-}
 
 
     // =================================================
@@ -1058,11 +1057,11 @@ window.gdmApp = window.gdmApp || {};
 
 
     // =================================================
-    // RENDER ALL
+    // RENDER ALL (FIXED: Made async to handle async renderDocuments)
     // =================================================
 
     appState.renderAll =
-        function () {
+        async function () {
 
             if (!appState.dashboardData) {
                 return;
@@ -1103,7 +1102,8 @@ window.gdmApp = window.gdmApp || {};
             appState.renderMembers();
 
 
-            appState.renderDocuments();
+            // FIX: Await async renderDocuments function
+            await appState.renderDocuments();
 
 
             appState.renderReports();
@@ -3512,7 +3512,7 @@ window.gdmApp = window.gdmApp || {};
                         data;
 
 
-                    appState.renderAll();
+                    await appState.renderAll();
 
 
                     showToast(
@@ -3670,7 +3670,7 @@ window.gdmApp = window.gdmApp || {};
                     data;
 
 
-                appState.renderAll();
+                await appState.renderAll();
 
 
                 appState.updateNavPermissions();
@@ -3878,4 +3878,3 @@ window.gdmApp = window.gdmApp || {};
 
 
 })();
-```
