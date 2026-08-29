@@ -565,47 +565,26 @@ window.gdmApp = window.gdmApp || {};
 
     function formatFileSize(bytes) {
 
-        const size =
-            Number(bytes);
+    const size = Number(bytes);
 
-
-        if (!size || size <= 0) {
-            return "-";
-        }
-
-
-        if (size < 1024) {
-
-            return `${size} B`;
-
-        }
-
-
-        if (size < 1024 * 1024) {
-
-            return `${(
-                size / 1024
-            ).toFixed(1)} KB`;
-
-        }
-
-
-        if (size < 1024 * 1024 * 1024) {
-
-            return `${(
-                size /
-                (1024 * 1024)
-            ).toFixed(1)} MB`;
-
-        }
-
-
-        return `${(
-            size /
-            (1024 * 1024 * 1024)
-        ).toFixed(1)} GB`;
-
+    if (!size || size <= 0) {
+        return "-";
     }
+
+    if (size < 1024) {
+        return size + " B";
+    }
+
+    if (size < 1024 * 1024) {
+        return (size / 1024).toFixed(1) + " KB";
+    }
+
+    if (size < 1024 * 1024 * 1024) {
+        return (size / (1024 * 1024)).toFixed(1) + " MB";
+    }
+
+    return (size / (1024 * 1024 * 1024)).toFixed(1) + " GB";
+}
 
 
     // =================================================
