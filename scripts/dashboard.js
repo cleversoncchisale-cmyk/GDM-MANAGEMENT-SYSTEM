@@ -1,8 +1,20 @@
+```javascript
 /*
 ====================================================
- Good Deeds Ministries Management System
+ GOOD DEEDS MINISTRIES MANAGEMENT SYSTEM
  Dashboard Module
- Supabase Version
+ Supabase Database + Supabase Storage
+====================================================
+
+ STORAGE BUCKET:
+ gdm-documents
+
+ DATABASE:
+ Supabase
+
+ DOCUMENT TABLE:
+ documents
+
 ====================================================
 */
 
@@ -10,36 +22,43 @@ window.gdmApp = window.gdmApp || {};
 
 (function () {
 
+    "use strict";
+
     const appState = window.gdmApp;
 
+
     // =================================================
-    // SAFE STORAGE
+    // SAFE STORAGE UTILITIES
     // =================================================
 
     if (!appState.utils) {
 
         appState.utils = {
 
-            readStorage: (key, fallback) => {
+            readStorage(key, fallback = null) {
 
                 try {
 
-                    const data =
+                    const value =
                         localStorage.getItem(key);
 
-                    return data
-                        ? JSON.parse(data)
+                    return value
+                        ? JSON.parse(value)
                         : fallback;
 
                 } catch (error) {
 
+                    console.warn(
+                        "Storage read error:",
+                        error
+                    );
+
                     return fallback;
-
                 }
-
             },
 
-            writeStorage: (key, value) => {
+
+            writeStorage(key, value) {
 
                 try {
 
@@ -51,17 +70,51 @@ window.gdmApp = window.gdmApp || {};
                 } catch (error) {
 
                     console.warn(
-                        "Storage error:",
+                        "Storage write error:",
                         error
                     );
-
                 }
-
             }
 
         };
 
     }
+
+
+    // =================================================
+    // SUPABASE
+    // =================================================
+
+    function getSupabase() {
+
+        if (
+            appState.supabase &&
+            appState.supabaseReady
+        ) {
+
+            return appState.supabase;
+        }
+
+        if (
+            window.supabase &&
+            typeof window.supabase.createClient === "function"
+        ) {
+
+            console.warn(
+                "Supabase client exists but appState.supabase is not ready."
+            );
+        }
+
+        return null;
+    }
+
+
+    // =================================================
+    // STORAGE CONFIGURATION
+    // =================================================
+
+    const DOCUMENT_BUCKET =
+        "gdm-documents";
 
 
     // =================================================
@@ -75,6 +128,7 @@ window.gdmApp = window.gdmApp || {};
             )
         );
 
+
     const navItems =
         Array.from(
             document.querySelectorAll(
@@ -82,21 +136,25 @@ window.gdmApp = window.gdmApp || {};
             )
         );
 
+
     const navButtons =
         navItems.filter(
             item =>
                 item.tagName === "BUTTON"
         );
 
+
     const globalSearch =
         document.getElementById(
             "globalSearch"
         );
 
+
     const ministriesSearch =
         document.getElementById(
             "ministriesSearch"
         );
+
 
     const loadingOverlay =
         document.getElementById(
@@ -105,7 +163,206 @@ window.gdmApp = window.gdmApp || {};
 
 
     // =================================================
-    // NAVIGATION
+    // CURRENT USER
+    // =================================================
+
+    function getCurrentUser() {
+
+        return (
+            appState.currentUser ||
+            appState.supabaseUser ||
+            null
+        );
+    }
+
+
+    function getUserRole() {
+
+        const user =
+            getCurrentUser();
+
+        if (!user) {
+            return "viewer";
+        }
+
+        const role =
+            user.role ||
+            user.user_role ||
+            user.profile?.role ||
+            user.user_metadata?.role ||
+            "viewer";
+
+        return String(
+            role
+        )
+        .trim()
+        .toLowerCase()
+        .replace(/[\s-]+/g, "_");
+    }
+
+
+    function getUserId() {
+
+        const user =
+            getCurrentUser();
+
+        return (
+            user?.id ||
+            user?.auth_user_id ||
+            user?.user_id ||
+            null
+        );
+    }
+
+
+    function getUserEmail() {
+
+        const user =
+            getCurrentUser();
+
+        return (
+            user?.email ||
+            user?.user_metadata?.email ||
+            "Unknown"
+        );
+    }
+
+
+    // =================================================
+    // ROLE PERMISSIONS
+    // =================================================
+
+    const ROLE_PERMISSIONS = {
+
+        super_admin: [
+            "dashboardSection",
+            "ministriesSection",
+            "membersSection",
+            "documentsSection",
+            "reportsSection",
+            "activitySection"
+        ],
+
+        admin: [
+            "dashboardSection",
+            "ministriesSection",
+            "membersSection",
+            "documentsSection",
+            "reportsSection",
+            "activitySection"
+        ],
+
+        ministry_leader: [
+            "dashboardSection",
+            "ministriesSection",
+            "membersSection",
+            "documentsSection",
+            "reportsSection",
+            "activitySection"
+        ],
+
+        staff: [
+            "dashboardSection",
+            "ministriesSection",
+            "membersSection",
+            "documentsSection",
+            "reportsSection",
+            "activitySection"
+        ],
+
+        viewer: [
+            "dashboardSection",
+            "ministriesSection"
+        ]
+
+    };
+
+
+    function isSectionAllowed(target) {
+
+        const role =
+            getUserRole();
+
+        return (
+            ROLE_PERMISSIONS[role] ||
+            []
+        ).includes(target);
+    }
+
+
+    // =================================================
+    // NAVIGATION PERMISSIONS
+    // =================================================
+
+    appState.updateNavPermissions =
+        function () {
+
+            navItems.forEach(item => {
+
+                const target =
+                    item.dataset.target;
+
+                if (!target) {
+                    return;
+                }
+
+                const allowed =
+                    isSectionAllowed(target);
+
+                item.classList.toggle(
+                    "disabled",
+                    !allowed
+                );
+
+
+                if (
+                    item.tagName === "BUTTON"
+                ) {
+
+                    item.disabled =
+                        !allowed;
+
+                }
+
+            });
+
+
+            // -----------------------------------------
+            // Document upload permissions
+            // -----------------------------------------
+
+            const uploadButton =
+                document.getElementById(
+                    "uploadDocumentBtn"
+                );
+
+
+            const role =
+                getUserRole();
+
+
+            const canUpload = [
+                "super_admin",
+                "admin",
+                "ministry_leader",
+                "staff"
+            ].includes(role);
+
+
+            if (uploadButton) {
+
+                uploadButton.style.display =
+                    canUpload
+                        ? ""
+                        : "none";
+
+            }
+
+        };
+
+
+    // =================================================
+    // SHOW SECTION
     // =================================================
 
     function showSection(target) {
@@ -116,7 +373,20 @@ window.gdmApp = window.gdmApp || {};
                     item.id === target
             );
 
+
         if (!section) {
+            return;
+        }
+
+
+        if (!isSectionAllowed(target)) {
+
+            console.warn(
+                "Access denied:",
+                target,
+                getUserRole()
+            );
+
             return;
         }
 
@@ -157,9 +427,6 @@ window.gdmApp = window.gdmApp || {};
                 ministriesSection:
                     "Ministries",
 
-                membersSection:
-                    "Members",
-
                 documentsSection:
                     "Documents",
 
@@ -170,6 +437,7 @@ window.gdmApp = window.gdmApp || {};
                     "Recent Activity"
 
             };
+
 
             title.textContent =
                 titles[target] ||
@@ -182,163 +450,6 @@ window.gdmApp = window.gdmApp || {};
 
     appState.showSection =
         showSection;
-
-
-    // =================================================
-    // ROLE ACCESS
-    // =================================================
-
-    function isSectionAllowed(target) {
-
-        if (!appState.currentUser) {
-            return false;
-        }
-
-
-        const role =
-            String(
-                appState.currentUser.role ||
-                "Viewer"
-            ).trim();
-
-
-        const permissions = {
-
-            "Super Admin": [
-
-                "dashboardSection",
-                "ministriesSection",
-                "membersSection",
-                "documentsSection",
-                "reportsSection",
-                "activitySection"
-
-            ],
-
-            "Admin": [
-
-                "dashboardSection",
-                "ministriesSection",
-                "membersSection",
-                "documentsSection",
-                "reportsSection",
-                "activitySection"
-
-            ],
-
-            "Member": [
-
-                "dashboardSection",
-                "ministriesSection",
-                "membersSection",
-                "documentsSection",
-                "reportsSection",
-                "activitySection"
-
-            ],
-
-            "Viewer": [
-
-                "dashboardSection",
-                "ministriesSection"
-
-            ]
-
-        };
-
-
-        return (
-            permissions[role] || []
-        ).includes(target);
-
-    }
-
-
-    appState.isSectionAllowed =
-        isSectionAllowed;
-
-
-    // =================================================
-    // UPDATE NAVIGATION PERMISSIONS
-    // =================================================
-
-    appState.updateNavPermissions =
-        function () {
-
-            navItems.forEach(item => {
-
-                const target =
-                    item.dataset.target;
-
-                /*
-                Links such as Overview,
-                Ministries and Tasks do not
-                have data-target and therefore
-                are left alone.
-                */
-
-                if (!target) {
-                    return;
-                }
-
-
-                const allowed =
-                    isSectionAllowed(target);
-
-
-                item.classList.toggle(
-                    "disabled",
-                    !allowed
-                );
-
-
-                if (
-                    item.tagName === "BUTTON"
-                ) {
-
-                    item.disabled =
-                        !allowed;
-
-                }
-
-            });
-
-
-            // -----------------------------------------
-            // Document upload permission
-            // -----------------------------------------
-
-            const uploadDocumentBtn =
-                document.getElementById(
-                    "uploadDocumentBtn"
-                );
-
-
-            const role =
-                String(
-                    appState.currentUser?.role ||
-                    "Viewer"
-                ).trim();
-
-
-            const canUploadDocument =
-                [
-                    "Super Admin",
-                    "Admin",
-                    "Member"
-                ].includes(role);
-
-
-            if (uploadDocumentBtn) {
-
-                uploadDocumentBtn.style.display =
-                    canUploadDocument
-                        ? ""
-                        : "none";
-
-            }
-
-        };
 
 
     // =================================================
@@ -361,181 +472,698 @@ window.gdmApp = window.gdmApp || {};
 
 
     // =================================================
-    // INITIALIZE APPLICATION
+    // TOAST
     // =================================================
 
-    appState.initializeApp =
+    function showToast(
+        message,
+        type = "info"
+    ) {
+
+        const stack =
+            document.getElementById(
+                "toastStack"
+            );
+
+
+        if (!stack) {
+
+            console.log(
+                `[${type}]`,
+                message
+            );
+
+            return;
+        }
+
+
+        const toast =
+            document.createElement(
+                "div"
+            );
+
+
+        toast.className =
+            `toast toast-${type}`;
+
+
+        toast.textContent =
+            message;
+
+
+        stack.appendChild(
+            toast
+        );
+
+
+        setTimeout(() => {
+
+            toast.classList.add(
+                "hide"
+            );
+
+            setTimeout(() => {
+
+                toast.remove();
+
+            }, 300);
+
+        }, 3500);
+
+    }
+
+
+    appState.showToast =
+        showToast;
+
+
+    // =================================================
+    // DATE HELPERS
+    // =================================================
+
+    function normalizeDate(value) {
+
+        if (!value) {
+            return null;
+        }
+
+
+        if (
+            typeof value.toDate ===
+            "function"
+        ) {
+
+            return value.toDate();
+
+        }
+
+
+        const date =
+            new Date(value);
+
+
+        return isNaN(
+            date.getTime()
+        )
+            ? null
+            : date;
+    }
+
+
+    function formatDate(value) {
+
+        const date =
+            normalizeDate(value);
+
+
+        if (!date) {
+            return "-";
+        }
+
+
+        return date.toLocaleDateString(
+            undefined,
+            {
+                year: "numeric",
+                month: "short",
+                day: "numeric"
+            }
+        );
+
+    }
+
+
+    function formatFileSize(bytes) {
+
+        const size =
+            Number(bytes);
+
+
+        if (!size || size <= 0) {
+            return "-";
+        }
+
+
+        if (size < 1024) {
+
+            return `${size} B`;
+
+        }
+
+
+        if (size < 1024 * 1024) {
+
+            return `${(
+                size / 1024
+            ).toFixed(1)} KB`;
+
+        }
+
+
+        if (size < 1024 * 1024 * 1024) {
+
+            return `${(
+                size /
+                (1024 * 1024)
+            ).toFixed(1)} MB`;
+
+        }
+
+
+        return `${(
+            size /
+            (1024 * 1024 * 1024)
+        ).toFixed(1)} GB`;
+
+    }
+
+
+    // =================================================
+    // ESCAPE HTML
+    // =================================================
+
+    function escapeHTML(value) {
+
+        return String(
+            value ?? ""
+        )
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+        .replace(
+            /</g,
+            "&lt;"
+        )
+        .replace(
+            />/g,
+            "&gt;"
+        )
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+        .replace(
+            /'/g,
+            "&#039;"
+        );
+
+    }
+
+
+    // =================================================
+    // DATA NORMALIZATION
+    // =================================================
+
+    function normalizeMinistry(row) {
+
+        return {
+
+            ...row,
+
+            id:
+                row.id,
+
+            title:
+                row.title ||
+                row.name ||
+                "Unnamed Ministry",
+
+            name:
+                row.name ||
+                row.title ||
+                "Unnamed Ministry",
+
+            description:
+                row.description ||
+                "",
+
+            lead:
+                row.lead ||
+                row.leader ||
+                row.leader_name ||
+                "",
+
+            members:
+                Number(
+                    row.members ||
+                    row.member_count ||
+                    0
+                ),
+
+            progress:
+                Number(
+                    row.progress ||
+                    0
+                ),
+
+            status:
+                row.status ||
+                "Active"
+
+        };
+
+    }
+
+
+    function normalizeDocument(row) {
+
+        return {
+
+            ...row,
+
+            id:
+                row.id,
+
+            title:
+                row.title ||
+                row.file_name ||
+                "Untitled document",
+
+            fileName:
+                row.file_name ||
+                row.fileName ||
+                "",
+
+            filePath:
+                row.file_path ||
+                row.filePath ||
+                "",
+
+            fileUrl:
+                row.file_url ||
+                row.fileUrl ||
+                "",
+
+            type:
+                row.mime_type ||
+                row.type ||
+                "File",
+
+            size:
+                row.file_size
+                    ? formatFileSize(
+                        row.file_size
+                    )
+                    : (
+                        row.size ||
+                        "-"
+                    ),
+
+            ministry:
+                row.ministry ||
+                row.ministry_name ||
+                "General",
+
+            ministryId:
+                row.ministry_id ||
+                null,
+
+            departmentId:
+                row.department_id ||
+                null,
+
+            uploadedBy:
+                row.uploaded_by ||
+                null,
+
+            uploadedAt:
+                row.created_at ||
+                row.uploadedAt ||
+                null
+
+        };
+
+    }
+
+
+    // =================================================
+    // SUPABASE DATA LOADER
+    // =================================================
+
+    appState.loadDashboardData =
         async function () {
+
+            const supabase =
+                getSupabase();
+
+
+            if (!supabase) {
+
+                throw new Error(
+                    "Supabase client is not available."
+                );
+
+            }
+
+
+            console.log(
+                "Loading GDM dashboard data from Supabase..."
+            );
+
+
+            // -----------------------------------------
+            // Ministries
+            // -----------------------------------------
+
+            let ministries = [];
+
 
             try {
 
-                appState.showLoading(true);
+                const result =
+                    await supabase
+                        .from("ministries")
+                        .select("*")
+                        .order(
+                            "created_at",
+                            {
+                                ascending: true
+                            }
+                        );
 
 
-                if (!appState.supabase) {
+                if (result.error) {
 
-                    throw new Error(
-                        "Supabase is not initialized."
+                    console.warn(
+                        "Ministries query:",
+                        result.error.message
                     );
 
-                }
+                } else {
 
-
-                const data =
-                    await appState.loadDashboardData();
-
-
-                appState.dashboardData =
-                    data;
-
-
-                appState.renderAll();
-
-
-                if (
-                    typeof appState.renderNotifications ===
-                    "function"
-                ) {
-
-                    appState.renderNotifications();
+                    ministries =
+                        (
+                            result.data ||
+                            []
+                        ).map(
+                            normalizeMinistry
+                        );
 
                 }
-
-
-                if (
-                    typeof appState.startLiveNotifications ===
-                    "function"
-                ) {
-
-                    appState.startLiveNotifications();
-
-                }
-
-
-                if (
-                    typeof appState.subscribeRealtimeCollections ===
-                    "function"
-                ) {
-
-                    appState.subscribeRealtimeCollections();
-
-                }
-
-
-                appState.updateNavPermissions();
-
-
-                showSection(
-                    "dashboardSection"
-                );
-
 
             } catch (error) {
 
-                console.error(
-                    "Dashboard initialization failed:",
+                console.warn(
+                    "Unable to load ministries:",
                     error
                 );
 
-            } finally {
+            }
 
-                appState.showLoading(false);
+
+            // -----------------------------------------
+            // Members
+            // -----------------------------------------
+
+            let members = [];
+
+
+            try {
+
+                const result =
+                    await supabase
+                        .from("members")
+                        .select("*")
+                        .order(
+                            "created_at",
+                            {
+                                ascending: false
+                            }
+                        );
+
+
+                if (result.error) {
+
+                    console.warn(
+                        "Members query:",
+                        result.error.message
+                    );
+
+                } else {
+
+                    members =
+                        result.data ||
+                        [];
+
+                }
+
+            } catch (error) {
+
+                console.warn(
+                    "Unable to load members:",
+                    error
+                );
 
             }
+
+
+            // -----------------------------------------
+            // Documents
+            // -----------------------------------------
+
+            let documents = [];
+
+
+            try {
+
+                const result =
+                    await supabase
+                        .from("documents")
+                        .select(`
+                            id,
+                            title,
+                            description,
+                            file_name,
+                            file_path,
+                            file_url,
+                            mime_type,
+                            file_size,
+                            ministry_id,
+                            department_id,
+                            uploaded_by,
+                            is_public,
+                            is_active,
+                            created_at,
+                            updated_at
+                        `)
+                        .eq(
+                            "is_active",
+                            true
+                        )
+                        .order(
+                            "created_at",
+                            {
+                                ascending: false
+                            }
+                        );
+
+
+                if (result.error) {
+
+                    console.warn(
+                        "Documents query:",
+                        result.error.message
+                    );
+
+                } else {
+
+                    documents =
+                        (
+                            result.data ||
+                            []
+                        ).map(
+                            normalizeDocument
+                        );
+
+                }
+
+            } catch (error) {
+
+                console.warn(
+                    "Unable to load documents:",
+                    error
+                );
+
+            }
+
+
+            // -----------------------------------------
+            // Reports
+            // -----------------------------------------
+
+            let reportSubmissions = [];
+
+
+            try {
+
+                const result =
+                    await supabase
+                        .from(
+                            "report_submissions"
+                        )
+                        .select("*")
+                        .order(
+                            "created_at",
+                            {
+                                ascending: false
+                            }
+                        );
+
+
+                if (result.error) {
+
+                    console.warn(
+                        "Reports query:",
+                        result.error.message
+                    );
+
+                } else {
+
+                    reportSubmissions =
+                        result.data ||
+                        [];
+
+                }
+
+            } catch (error) {
+
+                console.warn(
+                    "Unable to load reports:",
+                    error
+                );
+
+            }
+
+
+            // -----------------------------------------
+            // Activity
+            // -----------------------------------------
+
+            let activity = [];
+
+
+            try {
+
+                const result =
+                    await supabase
+                        .from(
+                            "activity"
+                        )
+                        .select("*")
+                        .order(
+                            "created_at",
+                            {
+                                ascending: false
+                            }
+                        )
+                        .limit(50);
+
+
+                if (result.error) {
+
+                    console.warn(
+                        "Activity query:",
+                        result.error.message
+                    );
+
+                } else {
+
+                    activity =
+                        result.data ||
+                        [];
+
+                }
+
+            } catch (error) {
+
+                console.warn(
+                    "Unable to load activity:",
+                    error
+                );
+
+            }
+
+
+            return {
+
+                heroTitle:
+                    "Operational Insights for the Ministries",
+
+                summary:
+                    "Monitor ministries, members, documents, reports and ministry activity from one secure control center.",
+
+                ministries,
+
+                members,
+
+                documents,
+
+                reportSubmissions,
+
+                activity
+
+            };
 
         };
 
 
     // =================================================
-    // RENDER EVERYTHING
+    // RENDER ALL
     // =================================================
 
     appState.renderAll =
         function () {
 
-            if (appState.dashboardData) {
-
-                appState.ministries =
-                    appState.dashboardData.ministries ||
-                    [];
-
-                appState.members =
-                    appState.dashboardData.members ||
-                    [];
-
-                appState.documents =
-                    appState.dashboardData.documents ||
-                    [];
-
-                appState.activity =
-                    appState.dashboardData.activity ||
-                    [];
-
-                appState.reportSubmissions =
-                    appState.dashboardData.reportSubmissions ||
-                    [];
-
+            if (!appState.dashboardData) {
+                return;
             }
 
 
-            if (
-                typeof appState.renderDashboard ===
-                "function"
-            ) {
-
-                appState.renderDashboard();
-
-            }
+            appState.ministries =
+                appState.dashboardData.ministries ||
+                [];
 
 
-            if (
-                typeof appState.renderMinistries ===
-                "function"
-            ) {
-
-                appState.renderMinistries();
-
-            }
+            appState.members =
+                appState.dashboardData.members ||
+                [];
 
 
-            if (
-                typeof appState.renderMembers ===
-                "function"
-            ) {
-
-                appState.renderMembers();
-
-            }
+            appState.documents =
+                appState.dashboardData.documents ||
+                [];
 
 
-            if (
-                typeof appState.renderDocuments ===
-                "function"
-            ) {
-
-                appState.renderDocuments();
-
-            }
+            appState.reportSubmissions =
+                appState.dashboardData.reportSubmissions ||
+                [];
 
 
-            if (
-                typeof appState.renderReports ===
-                "function"
-            ) {
-
-                appState.renderReports();
-
-            }
+            appState.activity =
+                appState.dashboardData.activity ||
+                [];
 
 
-            if (
-                typeof appState.renderActivity ===
-                "function"
-            ) {
+            appState.renderDashboard();
 
-                appState.renderActivity();
 
-            }
+            appState.renderMinistries();
+
+
+            appState.renderMembers();
+
+
+            appState.renderDocuments();
+
+
+            appState.renderReports();
+
+
+            appState.renderActivity();
+
+
+            appState.updateNavPermissions();
 
         };
 
@@ -551,6 +1179,35 @@ window.gdmApp = window.gdmApp || {};
                 appState.dashboardData ||
                 {};
 
+
+            const ministries =
+                appState.ministries ||
+                [];
+
+
+            const members =
+                appState.members ||
+                [];
+
+
+            const documents =
+                appState.documents ||
+                [];
+
+
+            const reports =
+                appState.reportSubmissions ||
+                [];
+
+
+            const activities =
+                appState.activity ||
+                [];
+
+
+            // -----------------------------------------
+            // Hero
+            // -----------------------------------------
 
             const heroTitle =
                 document.getElementById(
@@ -577,37 +1234,13 @@ window.gdmApp = window.gdmApp || {};
 
                 heroSummary.textContent =
                     data.summary ||
-                    "Monitor progress, approvals, documents, and community impact in one modern dashboard.";
+                    "";
 
             }
 
 
-            const ministries =
-                appState.ministries ||
-                data.ministries ||
-                [];
-
-
-            const members =
-                appState.members ||
-                data.members ||
-                [];
-
-
-            const reports =
-                appState.reportSubmissions ||
-                data.reportSubmissions ||
-                [];
-
-
-            const activities =
-                appState.activity ||
-                data.activity ||
-                [];
-
-
             // -----------------------------------------
-            // Active ministries
+            // Ministry count
             // -----------------------------------------
 
             const ministryCount =
@@ -627,7 +1260,7 @@ window.gdmApp = window.gdmApp || {};
 
 
             // -----------------------------------------
-            // Pending tasks
+            // Task count
             // -----------------------------------------
 
             const taskCount =
@@ -636,26 +1269,27 @@ window.gdmApp = window.gdmApp || {};
                 );
 
 
+            const pendingTasks =
+                activities.filter(
+                    item => {
+
+                        const status =
+                            String(
+                                item.status ||
+                                ""
+                            )
+                            .toLowerCase();
+
+                        return (
+                            status === "pending" ||
+                            status === "open"
+                        );
+
+                    }
+                ).length;
+
+
             if (taskCount) {
-
-                const pendingTasks =
-                    activities.filter(
-                        activity => {
-
-                            const status =
-                                String(
-                                    activity.status ||
-                                    ""
-                                ).toLowerCase();
-
-                            return (
-                                status === "pending" ||
-                                status === "open"
-                            );
-
-                        }
-                    ).length;
-
 
                 taskCount.textContent =
                     String(
@@ -666,7 +1300,7 @@ window.gdmApp = window.gdmApp || {};
 
 
             // -----------------------------------------
-            // Role
+            // Role label
             // -----------------------------------------
 
             const roleLabel =
@@ -678,14 +1312,92 @@ window.gdmApp = window.gdmApp || {};
             if (roleLabel) {
 
                 roleLabel.textContent =
-                    appState.currentUser?.role ||
-                    "Viewer";
+                    getUserRole()
+                        .replace(
+                            /_/g,
+                            " "
+                        )
+                        .replace(
+                            /\b\w/g,
+                            letter =>
+                                letter.toUpperCase()
+                        );
 
             }
 
 
             // -----------------------------------------
-            // Ministry mini cards
+            // Notification list
+            // -----------------------------------------
+
+            const notificationList =
+                document.getElementById(
+                    "notificationList"
+                );
+
+
+            if (notificationList) {
+
+                notificationList.innerHTML =
+                    "";
+
+
+                if (!activities.length) {
+
+                    notificationList.innerHTML =
+                        `
+                        <li class="empty-state">
+                            No recent activity.
+                        </li>
+                        `;
+
+                } else {
+
+                    activities
+                        .slice(0, 5)
+                        .forEach(
+                            item => {
+
+                                const li =
+                                    document.createElement(
+                                        "li"
+                                    );
+
+
+                                li.innerHTML =
+                                    `
+                                    <strong>
+                                        ${escapeHTML(
+                                            item.title ||
+                                            "Activity"
+                                        )}
+                                    </strong>
+
+                                    <span>
+                                        ${escapeHTML(
+                                            item.detail ||
+                                            item.description ||
+                                            ""
+                                        )}
+                                    </span>
+                                    `;
+
+
+                                notificationList
+                                    .appendChild(
+                                        li
+                                    );
+
+                            }
+                        );
+
+                }
+
+            }
+
+
+            // -----------------------------------------
+            // Mini ministry cards
             // -----------------------------------------
 
             const miniCards =
@@ -696,16 +1408,18 @@ window.gdmApp = window.gdmApp || {};
 
             if (miniCards) {
 
-                miniCards.innerHTML = "";
+                miniCards.innerHTML =
+                    "";
 
 
                 if (!ministries.length) {
 
-                    miniCards.innerHTML = `
+                    miniCards.innerHTML =
+                        `
                         <div class="empty-state">
                             No ministry data available.
                         </div>
-                    `;
+                        `;
 
                 } else {
 
@@ -722,21 +1436,17 @@ window.gdmApp = window.gdmApp || {};
                                 "mini-card";
 
 
-                            card.innerHTML = `
-
+                            card.innerHTML =
+                                `
                                 <strong>
                                     ${escapeHTML(
-                                        ministry.name ||
-                                        ministry.title ||
-                                        "Unnamed Ministry"
+                                        ministry.title
                                     )}
                                 </strong>
 
                                 <span>
                                     ${Number(
-                                        ministry.member_count ??
-                                        ministry.members ??
-                                        0
+                                        ministry.members
                                     ) || 0}
                                     members
                                 </span>
@@ -747,18 +1457,72 @@ window.gdmApp = window.gdmApp || {};
                                     ) || 0}%
                                     progress
                                 </span>
+                                `;
 
-                            `;
 
-
-                            miniCards.appendChild(
-                                card
-                            );
+                            miniCards
+                                .appendChild(
+                                    card
+                                );
 
                         }
                     );
 
                 }
+
+            }
+
+
+            // -----------------------------------------
+            // Generic statistics grid
+            // -----------------------------------------
+
+            const statsGrid =
+                document.getElementById(
+                    "statsGrid"
+                );
+
+
+            if (statsGrid) {
+
+                statsGrid.innerHTML =
+                    `
+                    <div class="stat-card">
+                        <span class="eyebrow">
+                            Ministries
+                        </span>
+                        <strong>
+                            ${ministries.length}
+                        </strong>
+                    </div>
+
+                    <div class="stat-card">
+                        <span class="eyebrow">
+                            Members
+                        </span>
+                        <strong>
+                            ${members.length}
+                        </strong>
+                    </div>
+
+                    <div class="stat-card">
+                        <span class="eyebrow">
+                            Documents
+                        </span>
+                        <strong>
+                            ${documents.length}
+                        </strong>
+                    </div>
+
+                    <div class="stat-card">
+                        <span class="eyebrow">
+                            Reports
+                        </span>
+                        <strong>
+                            ${reports.length}
+                        </strong>
+                    </div>
+                    `;
 
             }
 
@@ -786,7 +1550,6 @@ window.gdmApp = window.gdmApp || {};
 
             const ministries =
                 appState.ministries ||
-                appState.dashboardData?.ministries ||
                 [];
 
 
@@ -801,26 +1564,26 @@ window.gdmApp = window.gdmApp || {};
                 ministries.filter(
                     ministry => {
 
-                        const name =
+                        const title =
                             String(
-                                ministry.name ||
                                 ministry.title ||
                                 ""
-                            ).toLowerCase();
+                            )
+                            .toLowerCase();
 
 
-                        const leader =
+                        const lead =
                             String(
-                                ministry.leader ||
                                 ministry.lead ||
                                 ""
-                            ).toLowerCase();
+                            )
+                            .toLowerCase();
 
 
                         return (
                             !search ||
-                            name.includes(search) ||
-                            leader.includes(search)
+                            title.includes(search) ||
+                            lead.includes(search)
                         );
 
                     }
@@ -833,16 +1596,18 @@ window.gdmApp = window.gdmApp || {};
 
             if (container) {
 
-                container.innerHTML = "";
+                container.innerHTML =
+                    "";
 
 
                 if (!filtered.length) {
 
-                    container.innerHTML = `
+                    container.innerHTML =
+                        `
                         <div class="empty-state">
                             No ministry data available.
                         </div>
-                    `;
+                        `;
 
                 } else {
 
@@ -859,29 +1624,24 @@ window.gdmApp = window.gdmApp || {};
                                 "ministry-card";
 
 
-                            card.innerHTML = `
-
+                            card.innerHTML =
+                                `
                                 <h3>
                                     ${escapeHTML(
-                                        ministry.name ||
-                                        ministry.title ||
-                                        "Unnamed Ministry"
+                                        ministry.title
                                     )}
                                 </h3>
 
                                 <p>
                                     ${escapeHTML(
-                                        ministry.description ||
-                                        ""
+                                        ministry.description
                                     )}
                                 </p>
 
                                 <div>
                                     <strong>
                                         ${Number(
-                                            ministry.member_count ??
-                                            ministry.members ??
-                                            0
+                                            ministry.members
                                         ) || 0}
                                     </strong>
                                     members
@@ -898,12 +1658,10 @@ window.gdmApp = window.gdmApp || {};
 
                                 <div>
                                     ${escapeHTML(
-                                        ministry.status ||
-                                        "Active"
+                                        ministry.status
                                     )}
                                 </div>
-
-                            `;
+                                `;
 
 
                             container.appendChild(
@@ -924,7 +1682,8 @@ window.gdmApp = window.gdmApp || {};
 
             if (table) {
 
-                table.innerHTML = "";
+                table.innerHTML =
+                    "";
 
 
                 filtered.forEach(
@@ -936,19 +1695,16 @@ window.gdmApp = window.gdmApp || {};
                             );
 
 
-                        row.innerHTML = `
-
+                        row.innerHTML =
+                            `
                             <td>
                                 ${escapeHTML(
-                                    ministry.name ||
-                                    ministry.title ||
-                                    "Unnamed Ministry"
+                                    ministry.title
                                 )}
                             </td>
 
                             <td>
                                 ${escapeHTML(
-                                    ministry.leader ||
                                     ministry.lead ||
                                     "-"
                                 )}
@@ -962,20 +1718,16 @@ window.gdmApp = window.gdmApp || {};
 
                             <td>
                                 ${Number(
-                                    ministry.member_count ??
-                                    ministry.members ??
-                                    0
+                                    ministry.members
                                 ) || 0}
                             </td>
 
                             <td>
                                 ${escapeHTML(
-                                    ministry.status ||
-                                    "Active"
+                                    ministry.status
                                 )}
                             </td>
-
-                        `;
+                            `;
 
 
                         table.appendChild(
@@ -1010,23 +1762,23 @@ window.gdmApp = window.gdmApp || {};
 
             const members =
                 appState.members ||
-                appState.dashboardData?.members ||
                 [];
 
 
-            container.innerHTML = "";
+            container.innerHTML =
+                "";
 
 
             if (!members.length) {
 
-                container.innerHTML = `
+                container.innerHTML =
+                    `
                     <div class="empty-state">
                         No members available.
                     </div>
-                `;
+                    `;
 
                 return;
-
             }
 
 
@@ -1043,11 +1795,10 @@ window.gdmApp = window.gdmApp || {};
                         "member-card";
 
 
-                    card.innerHTML = `
-
+                    card.innerHTML =
+                        `
                         <h3>
                             ${escapeHTML(
-                                member.full_name ||
                                 member.name ||
                                 member.display_name ||
                                 member.displayName ||
@@ -1078,8 +1829,7 @@ window.gdmApp = window.gdmApp || {};
                                 "Active"
                             )}
                         </span>
-
-                    `;
+                        `;
 
 
                     container.appendChild(
@@ -1093,11 +1843,118 @@ window.gdmApp = window.gdmApp || {};
 
 
     // =================================================
+    // GET DOCUMENT URL
+    // =================================================
+
+    async function getDocumentUrl(doc) {
+
+        const supabase =
+            getSupabase();
+
+
+        if (!supabase) {
+            return null;
+        }
+
+
+        // -----------------------------------------
+        // Existing URL
+        // -----------------------------------------
+
+        if (doc.fileUrl) {
+
+            return doc.fileUrl;
+
+        }
+
+
+        if (!doc.filePath) {
+
+            return null;
+
+        }
+
+
+        // -----------------------------------------
+        // Try signed URL
+        // -----------------------------------------
+
+        try {
+
+            const result =
+                await supabase
+                    .storage
+                    .from(
+                        DOCUMENT_BUCKET
+                    )
+                    .createSignedUrl(
+                        doc.filePath,
+                        3600
+                    );
+
+
+            if (
+                !result.error &&
+                result.data?.signedUrl
+            ) {
+
+                return result.data.signedUrl;
+
+            }
+
+        } catch (error) {
+
+            console.warn(
+                "Signed URL generation failed:",
+                error
+            );
+
+        }
+
+
+        // -----------------------------------------
+        // Public URL fallback
+        // -----------------------------------------
+
+        try {
+
+            const result =
+                supabase
+                    .storage
+                    .from(
+                        DOCUMENT_BUCKET
+                    )
+                    .getPublicUrl(
+                        doc.filePath
+                    );
+
+
+            return (
+                result.data?.publicUrl ||
+                null
+            );
+
+        } catch (error) {
+
+            console.warn(
+                "Public URL generation failed:",
+                error
+            );
+
+        }
+
+
+        return null;
+
+    }
+
+
+    // =================================================
     // DOCUMENTS
     // =================================================
 
     appState.renderDocuments =
-        function () {
+        async function () {
 
             const table =
                 document.getElementById(
@@ -1125,12 +1982,11 @@ window.gdmApp = window.gdmApp || {};
 
             const docs =
                 appState.documents ||
-                appState.dashboardData?.documents ||
                 [];
 
 
             // -----------------------------------------
-            // File count
+            // Counts
             // -----------------------------------------
 
             if (documentCount) {
@@ -1143,18 +1999,15 @@ window.gdmApp = window.gdmApp || {};
             }
 
 
-            // -----------------------------------------
-            // Ministry count
-            // -----------------------------------------
-
-            const ministries =
+            const ministryIds =
                 new Set(
-                    docs.map(
-                        doc =>
-                            doc.ministry_id ||
-                            doc.ministry ||
-                            "General"
-                    )
+                    docs
+                        .map(
+                            doc =>
+                                doc.ministryId ||
+                                doc.ministry
+                        )
+                        .filter(Boolean)
                 );
 
 
@@ -1162,59 +2015,49 @@ window.gdmApp = window.gdmApp || {};
 
                 ministryCount.textContent =
                     String(
-                        ministries.size
+                        ministryIds.size
                     );
 
             }
 
 
-            // -----------------------------------------
-            // Recent uploads
-            // -----------------------------------------
-
-            if (recentCount) {
-
-                const now =
-                    Date.now();
+            const now =
+                Date.now();
 
 
-                const sevenDays =
-                    7 *
-                    24 *
-                    60 *
-                    60 *
-                    1000;
+            const sevenDays =
+                7 *
+                24 *
+                60 *
+                60 *
+                1000;
 
 
-                const recent =
-                    docs.filter(
-                        doc => {
+            const recent =
+                docs.filter(
+                    doc => {
 
-                            const dateValue =
-                                doc.created_at ||
-                                doc.uploadedAt;
-
-
-                            if (!dateValue) {
-                                return false;
-                            }
-
-
-                            const timestamp =
-                                new Date(
-                                    dateValue
-                                ).getTime();
-
-
-                            return (
-                                !isNaN(timestamp) &&
-                                now - timestamp <
-                                sevenDays
+                        const date =
+                            normalizeDate(
+                                doc.uploadedAt
                             );
 
-                        }
-                    ).length;
 
+                        if (!date) {
+                            return false;
+                        }
+
+
+                        return (
+                            now -
+                            date.getTime()
+                        ) <= sevenDays;
+
+                    }
+                ).length;
+
+
+            if (recentCount) {
 
                 recentCount.textContent =
                     String(
@@ -1229,22 +2072,227 @@ window.gdmApp = window.gdmApp || {};
             }
 
 
-            table.innerHTML = "";
+            table.innerHTML =
+                "";
 
 
             if (!docs.length) {
 
-                table.innerHTML = `
-
+                table.innerHTML =
+                    `
                     <tr>
-
                         <td colspan="6">
                             No documents available.
                         </td>
-
                     </tr>
+                    `;
 
-                `;
+                return;
+            }
+
+
+            // -----------------------------------------
+            // Render rows
+            // -----------------------------------------
+
+            for (
+                const doc of docs
+            ) {
+
+                const row =
+                    document.createElement(
+                        "tr"
+                    );
+
+
+                const actionCell =
+                    document.createElement(
+                        "td"
+                    );
+
+
+                actionCell.innerHTML =
+                    `
+                    <span>
+                        Loading...
+                    </span>
+                    `;
+
+
+                row.innerHTML =
+                    `
+                    <td>
+                        ${escapeHTML(
+                            doc.title
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHTML(
+                            doc.ministry
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHTML(
+                            doc.type
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHTML(
+                            doc.size
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHTML(
+                            formatDate(
+                                doc.uploadedAt
+                            )
+                        )}
+                    </td>
+                    `;
+
+
+                row.appendChild(
+                    actionCell
+                );
+
+
+                table.appendChild(
+                    row
+                );
+
+
+                // -------------------------------------
+                // Generate URL
+                // -------------------------------------
+
+                const url =
+                    await getDocumentUrl(
+                        doc
+                    );
+
+
+                if (url) {
+
+                    actionCell.innerHTML =
+                        `
+                        <div
+                            style="
+                                display:flex;
+                                gap:8px;
+                                flex-wrap:wrap;
+                            "
+                        >
+
+                            <a
+                                href="${escapeHTML(
+                                    url
+                                )}"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="secondary-btn"
+                            >
+                                Open
+                            </a>
+
+                            <a
+                                href="${escapeHTML(
+                                    url
+                                )}"
+                                download="${escapeHTML(
+                                    doc.fileName ||
+                                    doc.title ||
+                                    "document"
+                                )}"
+                                class="secondary-btn"
+                            >
+                                Download
+                            </a>
+
+                        </div>
+                        `;
+
+                } else {
+
+                    actionCell.innerHTML =
+                        `
+                        <span>
+                            File unavailable
+                        </span>
+                        `;
+
+                }
+
+            }
+
+        };
+
+
+    // =================================================
+    // UPLOAD DOCUMENT TO SUPABASE
+    // =================================================
+
+    appState.uploadDocumentFile =
+        async function (file) {
+
+            if (!file) {
+                return;
+            }
+
+
+            const supabase =
+                getSupabase();
+
+
+            if (!supabase) {
+
+                showToast(
+                    "Supabase is not available.",
+                    "error"
+                );
+
+                return;
+
+            }
+
+
+            const userId =
+                getUserId();
+
+
+            if (!userId) {
+
+                showToast(
+                    "You must be signed in before uploading documents.",
+                    "error"
+                );
+
+                return;
+
+            }
+
+
+            const role =
+                getUserRole();
+
+
+            const canUpload = [
+                "super_admin",
+                "admin",
+                "ministry_leader",
+                "staff"
+            ].includes(role);
+
+
+            if (!canUpload) {
+
+                showToast(
+                    "You do not have permission to upload documents.",
+                    "error"
+                );
 
                 return;
 
@@ -1252,139 +2300,430 @@ window.gdmApp = window.gdmApp || {};
 
 
             // -----------------------------------------
-            // Document table
+            // File validation
             // -----------------------------------------
 
-            docs.forEach(
-                doc => {
+            const maxSize =
+                50 *
+                1024 *
+                1024;
 
-                    const row =
-                        document.createElement(
-                            "tr"
+
+            if (file.size > maxSize) {
+
+                showToast(
+                    "File is larger than the 50 MB limit.",
+                    "error"
+                );
+
+                return;
+
+            }
+
+
+            const allowedTypes = [
+
+                "application/pdf",
+
+                "application/msword",
+
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+
+                "image/jpeg",
+
+                "image/png",
+
+                "video/mp4",
+
+                "video/quicktime"
+
+            ];
+
+
+            if (
+                file.type &&
+                !allowedTypes.includes(
+                    file.type
+                )
+            ) {
+
+                showToast(
+                    "This file type is not allowed.",
+                    "error"
+                );
+
+                return;
+
+            }
+
+
+            // -----------------------------------------
+            // Safe filename
+            // -----------------------------------------
+
+            const originalName =
+                file.name;
+
+
+            const safeFileName =
+                originalName
+                    .replace(
+                        /[^a-zA-Z0-9._-]/g,
+                        "_"
+                    );
+
+
+            // -----------------------------------------
+            // Storage path
+            // -----------------------------------------
+
+            const storagePath =
+                `${userId}/${Date.now()}_${safeFileName}`;
+
+
+            const progress =
+                document.getElementById(
+                    "documentUploadProgress"
+                );
+
+
+            if (progress) {
+
+                progress.classList.remove(
+                    "hidden"
+                );
+
+                progress.value =
+                    10;
+
+            }
+
+
+            try {
+
+                console.log(
+                    "Uploading to Supabase Storage:",
+                    storagePath
+                );
+
+
+                // -------------------------------------
+                // Upload file
+                // -------------------------------------
+
+                const uploadResult =
+                    await supabase
+                        .storage
+                        .from(
+                            DOCUMENT_BUCKET
+                        )
+                        .upload(
+                            storagePath,
+                            file,
+                            {
+                                cacheControl:
+                                    "3600",
+
+                                upsert:
+                                    false,
+
+                                contentType:
+                                    file.type ||
+                                    "application/octet-stream"
+                            }
                         );
 
 
-                    const fileUrl =
-                        doc.file_url ||
-                        doc.fileUrl ||
-                        "";
+                if (uploadResult.error) {
+
+                    throw uploadResult.error;
+
+                }
 
 
-                    const fileName =
-                        doc.file_name ||
-                        doc.fileName ||
-                        doc.title ||
-                        "document";
+                if (progress) {
+                    progress.value = 60;
+                }
 
 
-                    const documentActions =
-                        fileUrl
+                // -------------------------------------
+                // Get public URL if bucket is public
+                // -------------------------------------
 
-                            ?
-
-                            `
-
-                            <div
-                                style="
-                                    display:flex;
-                                    gap:8px;
-                                    flex-wrap:wrap;
-                                "
-                            >
-
-                                <a
-                                    href="${escapeAttribute(
-                                        fileUrl
-                                    )}"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    class="secondary-btn"
-                                >
-                                    Open
-                                </a>
-
-                                <a
-                                    href="${escapeAttribute(
-                                        fileUrl
-                                    )}"
-                                    download="${escapeAttribute(
-                                        fileName
-                                    )}"
-                                    class="secondary-btn"
-                                >
-                                    Download
-                                </a>
-
-                            </div>
-
-                            `
-
-                            :
-
-                            `
-
-                            <span>
-                                Not available
-                            </span>
-
-                            `;
+                let fileUrl =
+                    null;
 
 
-                    row.innerHTML = `
+                try {
 
-                        <td>
-                            ${escapeHTML(
-                                doc.title ||
-                                fileName ||
-                                "-"
-                            )}
-                        </td>
-
-                        <td>
-                            ${escapeHTML(
-                                doc.ministry_name ||
-                                doc.ministry ||
-                                "General"
-                            )}
-                        </td>
-
-                        <td>
-                            ${escapeHTML(
-                                doc.mime_type ||
-                                doc.type ||
-                                "-"
-                            )}
-                        </td>
-
-                        <td>
-                            ${formatFileSize(
-                                doc.file_size ||
-                                doc.size
-                            )}
-                        </td>
-
-                        <td>
-                            ${formatDate(
-                                doc.created_at ||
-                                doc.uploadedAt
-                            )}
-                        </td>
-
-                        <td>
-                            ${documentActions}
-                        </td>
-
-                    `;
+                    const publicResult =
+                        supabase
+                            .storage
+                            .from(
+                                DOCUMENT_BUCKET
+                            )
+                            .getPublicUrl(
+                                storagePath
+                            );
 
 
-                    table.appendChild(
-                        row
+                    fileUrl =
+                        publicResult
+                            .data
+                            ?.publicUrl ||
+                        null;
+
+                } catch (error) {
+
+                    console.warn(
+                        "Public URL unavailable:",
+                        error
                     );
 
                 }
-            );
+
+
+                // -------------------------------------
+                // Save document metadata
+                // -------------------------------------
+
+                const documentEntry = {
+
+                    title:
+                        originalName,
+
+                    description:
+                        null,
+
+                    file_name:
+                        originalName,
+
+                    file_path:
+                        storagePath,
+
+                    file_url:
+                        fileUrl,
+
+                    mime_type:
+                        file.type ||
+                        "application/octet-stream",
+
+                    file_size:
+                        file.size,
+
+                    ministry_id:
+                        null,
+
+                    department_id:
+                        null,
+
+                    uploaded_by:
+                        userId,
+
+                    is_public:
+                        false,
+
+                    is_active:
+                        true
+
+                };
+
+
+                const insertResult =
+                    await supabase
+                        .from(
+                            "documents"
+                        )
+                        .insert(
+                            documentEntry
+                        )
+                        .select()
+                        .single();
+
+
+                if (insertResult.error) {
+
+                    // ---------------------------------
+                    // IMPORTANT:
+                    // If database insert fails,
+                    // remove uploaded file.
+                    // ---------------------------------
+
+                    try {
+
+                        await supabase
+                            .storage
+                            .from(
+                                DOCUMENT_BUCKET
+                            )
+                            .remove([
+                                storagePath
+                            ]);
+
+                    } catch (
+                        cleanupError
+                    ) {
+
+                        console.warn(
+                            "Storage cleanup failed:",
+                            cleanupError
+                        );
+
+                    }
+
+
+                    throw insertResult.error;
+
+                }
+
+
+                if (progress) {
+                    progress.value = 100;
+                }
+
+
+                // -------------------------------------
+                // Add to application state
+                // -------------------------------------
+
+                const savedDocument =
+                    normalizeDocument(
+                        insertResult.data
+                    );
+
+
+                appState.documents =
+                    appState.documents ||
+                    [];
+
+
+                appState.documents.unshift(
+                    savedDocument
+                );
+
+
+                await appState.renderDocuments();
+
+
+                showToast(
+                    "Document uploaded successfully.",
+                    "success"
+                );
+
+
+            } catch (error) {
+
+                console.error(
+                    "Document upload failed:",
+                    error
+                );
+
+
+                showToast(
+                    "Document upload failed: " +
+                    (
+                        error.message ||
+                        "Unknown error"
+                    ),
+                    "error"
+                );
+
+            } finally {
+
+                if (progress) {
+
+                    setTimeout(() => {
+
+                        progress.classList.add(
+                            "hidden"
+                        );
+
+                        progress.value =
+                            0;
+
+                    }, 800);
+
+                }
+
+            }
 
         };
+
+
+    // =================================================
+    // DOCUMENT UPLOAD EVENTS
+    // =================================================
+
+    const uploadDocumentBtn =
+        document.getElementById(
+            "uploadDocumentBtn"
+        );
+
+
+    const documentFileInput =
+        document.getElementById(
+            "documentFileInput"
+        );
+
+
+    if (
+        uploadDocumentBtn &&
+        documentFileInput
+    ) {
+
+        uploadDocumentBtn.addEventListener(
+            "click",
+            () => {
+
+                if (
+                    !isSectionAllowed(
+                        "documentsSection"
+                    )
+                ) {
+
+                    showToast(
+                        "You do not have permission to upload documents.",
+                        "error"
+                    );
+
+                    return;
+
+                }
+
+
+                documentFileInput.click();
+
+            }
+        );
+
+
+        documentFileInput.addEventListener(
+            "change",
+            async () => {
+
+                const file =
+                    documentFileInput
+                        .files?.[0];
+
+
+                if (!file) {
+                    return;
+                }
+
+
+                await appState
+                    .uploadDocumentFile(
+                        file
+                    );
+
+
+                documentFileInput.value =
+                    "";
+
+            }
+        );
+
+    }
 
 
     // =================================================
@@ -1420,7 +2759,6 @@ window.gdmApp = window.gdmApp || {};
 
             const reports =
                 appState.reportSubmissions ||
-                appState.dashboardData?.reportSubmissions ||
                 [];
 
 
@@ -1443,7 +2781,9 @@ window.gdmApp = window.gdmApp || {};
 
             const highest =
                 values.length
-                    ? Math.max(...values)
+                    ? Math.max(
+                        ...values
+                    )
                     : 0;
 
 
@@ -1470,7 +2810,8 @@ window.gdmApp = window.gdmApp || {};
                 approval.textContent =
                     `${Math.min(
                         100,
-                        70 + reports.length
+                        70 +
+                        reports.length
                     )}%`;
 
             }
@@ -1481,7 +2822,8 @@ window.gdmApp = window.gdmApp || {};
             }
 
 
-            table.innerHTML = "";
+            table.innerHTML =
+                "";
 
 
             reports.forEach(
@@ -1493,8 +2835,8 @@ window.gdmApp = window.gdmApp || {};
                         );
 
 
-                    row.innerHTML = `
-
+                    row.innerHTML =
+                        `
                         <td>
                             ${escapeHTML(
                                 report.title ||
@@ -1523,13 +2865,15 @@ window.gdmApp = window.gdmApp || {};
                         </td>
 
                         <td>
-                            ${formatDate(
-                                report.submitted_at ||
-                                report.submittedAt
+                            ${escapeHTML(
+                                formatDate(
+                                    report.submittedAt ||
+                                    report.submitted_at ||
+                                    report.created_at
+                                )
                             )}
                         </td>
-
-                    `;
+                        `;
 
 
                     table.appendChild(
@@ -1538,6 +2882,182 @@ window.gdmApp = window.gdmApp || {};
 
                 }
             );
+
+        };
+
+
+    // =================================================
+    // SAVE REPORT
+    // =================================================
+
+    appState.saveReportEntry =
+        async function (report) {
+
+            const supabase =
+                getSupabase();
+
+
+            if (!supabase) {
+
+                throw new Error(
+                    "Supabase is not available."
+                );
+
+            }
+
+
+            const userId =
+                getUserId();
+
+
+            if (!userId) {
+
+                throw new Error(
+                    "You must be signed in."
+                );
+
+            }
+
+
+            const payload = {
+
+                title:
+                    report.title,
+
+                ministry:
+                    report.ministry,
+
+                summary:
+                    report.summary,
+
+                value:
+                    Number(
+                        report.value
+                    ) || 0,
+
+                submitted_by:
+                    userId
+
+            };
+
+
+            const result =
+                await supabase
+                    .from(
+                        "report_submissions"
+                    )
+                    .insert(
+                        payload
+                    )
+                    .select()
+                    .single();
+
+
+            if (result.error) {
+
+                throw result.error;
+
+            }
+
+
+            appState.reportSubmissions =
+                appState.reportSubmissions ||
+                [];
+
+
+            appState.reportSubmissions.unshift(
+                result.data
+            );
+
+
+            appState.renderReports();
+
+        };
+
+
+    // =================================================
+    // SAVE ACTIVITY
+    // =================================================
+
+    appState.saveActivityEntry =
+        async function (activity) {
+
+            const supabase =
+                getSupabase();
+
+
+            if (!supabase) {
+
+                throw new Error(
+                    "Supabase is not available."
+                );
+
+            }
+
+
+            const userId =
+                getUserId();
+
+
+            if (!userId) {
+
+                throw new Error(
+                    "You must be signed in."
+                );
+
+            }
+
+
+            const payload = {
+
+                title:
+                    activity.title ||
+                    "Activity",
+
+                detail:
+                    activity.detail ||
+                    "",
+
+                status:
+                    activity.status ||
+                    "completed",
+
+                created_by:
+                    userId
+
+            };
+
+
+            const result =
+                await supabase
+                    .from(
+                        "activity"
+                    )
+                    .insert(
+                        payload
+                    )
+                    .select()
+                    .single();
+
+
+            if (result.error) {
+
+                throw result.error;
+
+            }
+
+
+            appState.activity =
+                appState.activity ||
+                [];
+
+
+            appState.activity.unshift(
+                result.data
+            );
+
+
+            appState.renderActivity();
 
         };
 
@@ -1562,38 +3082,21 @@ window.gdmApp = window.gdmApp || {};
 
             const activities =
                 appState.activity ||
-                appState.dashboardData?.activity ||
                 [];
 
 
-            timeline.innerHTML = "";
+            timeline.innerHTML =
+                "";
 
 
             if (!activities.length) {
 
-                timeline.innerHTML = `
-
-                    <li class="timeline-item">
-
-                        <div class="timeline-meta">
-
-                            <strong>
-                                No recent activity
-                            </strong>
-
-                            <span>
-                                Now
-                            </span>
-
-                        </div>
-
-                        <p>
-                            There are no recent updates to display.
-                        </p>
-
+                timeline.innerHTML =
+                    `
+                    <li class="empty-state">
+                        No recent activity.
                     </li>
-
-                `;
+                    `;
 
                 return;
 
@@ -1613,8 +3116,8 @@ window.gdmApp = window.gdmApp || {};
                         "timeline-item";
 
 
-                    li.innerHTML = `
-
+                    li.innerHTML =
+                        `
                         <div class="timeline-meta">
 
                             <strong>
@@ -1628,8 +3131,7 @@ window.gdmApp = window.gdmApp || {};
                                 ${escapeHTML(
                                     item.when ||
                                     formatDate(
-                                        item.created_at ||
-                                        item.createdAt
+                                        item.created_at
                                     ) ||
                                     "Now"
                                 )}
@@ -1644,8 +3146,7 @@ window.gdmApp = window.gdmApp || {};
                                 ""
                             )}
                         </p>
-
-                    `;
+                        `;
 
 
                     timeline.appendChild(
@@ -1659,400 +3160,36 @@ window.gdmApp = window.gdmApp || {};
 
 
     // =================================================
-    // SUPABASE DOCUMENT UPLOAD
-    // =================================================
-
-    appState.uploadDocumentFile =
-        async function (file) {
-
-            if (!file) {
-                return;
-            }
-
-
-            if (!appState.supabase) {
-
-                alert(
-                    "Supabase is not available."
-                );
-
-                return;
-
-            }
-
-
-            try {
-
-                const supabase =
-                    appState.supabase;
-
-
-                // -------------------------------------
-                // File information
-                // -------------------------------------
-
-                const originalName =
-                    file.name;
-
-
-                const safeFileName =
-                    originalName.replace(
-                        /[^a-zA-Z0-9._-]/g,
-                        "_"
-                    );
-
-
-                const uniqueName =
-                    `${Date.now()}_${safeFileName}`;
-
-
-                const filePath =
-                    `documents/${uniqueName}`;
-
-
-                console.log(
-                    "Uploading document:",
-                    originalName
-                );
-
-
-                // -------------------------------------
-                // Upload to Supabase Storage
-                // -------------------------------------
-
-                const {
-                    data: uploadData,
-                    error: uploadError
-                } =
-                    await supabase.storage
-                        .from("documents")
-                        .upload(
-                            filePath,
-                            file,
-                            {
-                                cacheControl:
-                                    "3600",
-
-                                upsert:
-                                    false,
-
-                                contentType:
-                                    file.type ||
-                                    "application/octet-stream"
-
-                            }
-                        );
-
-
-                if (uploadError) {
-
-                    throw uploadError;
-
-                }
-
-
-                console.log(
-                    "Storage upload successful:",
-                    uploadData
-                );
-
-
-                // -------------------------------------
-                // Get public URL
-                // -------------------------------------
-
-                const {
-                    data: publicUrlData
-                } =
-                    supabase.storage
-                        .from("documents")
-                        .getPublicUrl(
-                            filePath
-                        );
-
-
-                const fileUrl =
-                    publicUrlData?.publicUrl ||
-                    "";
-
-
-                // -------------------------------------
-                // Save document metadata
-                // -------------------------------------
-
-                const documentEntry = {
-
-                    title:
-                        originalName,
-
-                    description:
-                        "",
-
-                    file_name:
-                        originalName,
-
-                    file_path:
-                        filePath,
-
-                    file_url:
-                        fileUrl,
-
-                    mime_type:
-                        file.type ||
-                        "application/octet-stream",
-
-                    file_size:
-                        file.size,
-
-                    ministry_id:
-                        null,
-
-                    department_id:
-                        null,
-
-                    uploaded_by:
-                        appState.currentUser?.id ||
-                        null,
-
-                    is_public:
-                        true,
-
-                    is_active:
-                        true
-
-                };
-
-
-                const {
-                    data: savedDocument,
-                    error: databaseError
-                } =
-                    await supabase
-                        .from("documents")
-                        .insert(
-                            documentEntry
-                        )
-                        .select()
-                        .single();
-
-
-                if (databaseError) {
-
-                    /*
-                    If database insertion fails,
-                    remove the uploaded file so
-                    Storage does not contain an
-                    orphaned file.
-                    */
-
-                    await supabase.storage
-                        .from("documents")
-                        .remove([
-                            filePath
-                        ]);
-
-
-                    throw databaseError;
-
-                }
-
-
-                console.log(
-                    "Document metadata saved:",
-                    savedDocument
-                );
-
-
-                // -------------------------------------
-                // Update local state
-                // -------------------------------------
-
-                appState.documents =
-                    appState.documents || [];
-
-
-                appState.documents.unshift(
-                    savedDocument
-                );
-
-
-                if (
-                    appState.dashboardData
-                ) {
-
-                    appState.dashboardData.documents =
-                        appState.documents;
-
-                }
-
-
-                // -------------------------------------
-                // Re-render
-                // -------------------------------------
-
-                appState.renderDocuments();
-
-
-                appState.renderDashboard();
-
-
-                alert(
-                    "Document uploaded successfully."
-                );
-
-
-            } catch (error) {
-
-                console.error(
-                    "Document upload failed:",
-                    error
-                );
-
-
-                alert(
-                    "Document upload failed: " +
-                    (
-                        error.message ||
-                        "Unknown error"
-                    )
-                );
-
-            }
-
-        };
-
-
-    // =================================================
-    // DOCUMENT UPLOAD EVENTS
-    // =================================================
-
-    const uploadDocumentBtn =
-        document.getElementById(
-            "uploadDocumentBtn"
-        );
-
-
-    const documentFileInput =
-        document.getElementById(
-            "documentFileInput"
-        );
-
-
-    if (
-        uploadDocumentBtn &&
-        documentFileInput
-    ) {
-
-        uploadDocumentBtn.addEventListener(
-            "click",
-            () => {
-
-                documentFileInput.click();
-
-            }
-        );
-
-
-        documentFileInput.addEventListener(
-            "change",
-            async () => {
-
-                const file =
-                    documentFileInput.files?.[0];
-
-
-                if (!file) {
-                    return;
-                }
-
-
-                await appState.uploadDocumentFile(
-                    file
-                );
-
-
-                documentFileInput.value =
-                    "";
-
-            }
-        );
-
-    }
-
-
-    // =================================================
-    // NAVIGATION EVENTS
-    // =================================================
-
-    if (navButtons.length) {
-
-        navButtons.forEach(
-            button => {
-
-                button.addEventListener(
-                    "click",
-                    () => {
-
-                        const target =
-                            button.dataset.target;
-
-
-                        if (!target) {
-                            return;
-                        }
-
-
-                        if (
-                            !isSectionAllowed(
-                                target
-                            )
-                        ) {
-
-                            console.warn(
-                                "Access denied:",
-                                target,
-                                appState.currentUser?.role
-                            );
-
-                            return;
-
-                        }
-
-
-                        showSection(
-                            target
-                        );
-
-                    }
-                );
-
-            }
-        );
-
-    }
-
-
-    // =================================================
     // SEARCH
     // =================================================
+
+    function highlightSearchTerms() {
+
+        const value =
+            globalSearch?.value
+                ?.toLowerCase()
+                .trim() ||
+            "";
+
+
+        if (ministriesSearch) {
+
+            ministriesSearch.value =
+                value;
+
+        }
+
+
+        appState.renderMinistries();
+
+    }
+
 
     if (globalSearch) {
 
         globalSearch.addEventListener(
             "input",
-            () => {
-
-                if (ministriesSearch) {
-
-                    ministriesSearch.value =
-                        globalSearch.value;
-
-                }
-
-
-                appState.renderMinistries();
-
-            }
+            highlightSearchTerms
         );
 
     }
@@ -2070,6 +3207,53 @@ window.gdmApp = window.gdmApp || {};
         );
 
     }
+
+
+    // =================================================
+    // NAVIGATION EVENTS
+    // =================================================
+
+    navButtons.forEach(
+        button => {
+
+            button.addEventListener(
+                "click",
+                () => {
+
+                    const target =
+                        button.dataset.target;
+
+
+                    if (!target) {
+                        return;
+                    }
+
+
+                    if (
+                        !isSectionAllowed(
+                            target
+                        )
+                    ) {
+
+                        showToast(
+                            "You do not have permission to access this section.",
+                            "error"
+                        );
+
+                        return;
+
+                    }
+
+
+                    showSection(
+                        target
+                    );
+
+                }
+            );
+
+        }
+    );
 
 
     // =================================================
@@ -2094,41 +3278,48 @@ window.gdmApp = window.gdmApp || {};
                     );
 
 
-                if (!note) {
+                if (!note?.trim()) {
                     return;
                 }
 
 
-                const activity = {
+                try {
 
-                    title:
-                        "Quick Note",
+                    await appState
+                        .saveActivityEntry({
 
-                    detail:
-                        note,
+                            title:
+                                "Quick Note",
 
-                    when:
-                        "Just now",
+                            detail:
+                                note.trim(),
 
-                    created_at:
-                        new Date().toISOString()
+                            status:
+                                "completed"
 
-                };
+                        });
 
 
-                if (
-                    typeof appState.saveActivityEntry ===
-                    "function"
-                ) {
+                    showToast(
+                        "Activity saved.",
+                        "success"
+                    );
 
-                    await appState.saveActivityEntry(
-                        activity
+
+                } catch (error) {
+
+                    console.error(
+                        "Activity save failed:",
+                        error
+                    );
+
+
+                    showToast(
+                        "Could not save activity.",
+                        "error"
                     );
 
                 }
-
-
-                appState.renderActivity();
 
             }
         );
@@ -2158,36 +3349,44 @@ window.gdmApp = window.gdmApp || {};
                 const title =
                     document.getElementById(
                         "reportTitle"
-                    )?.value.trim();
+                    )
+                    ?.value
+                    .trim();
 
 
                 const ministry =
                     document.getElementById(
                         "reportMinistry"
-                    )?.value.trim();
+                    )
+                    ?.value
+                    .trim();
 
 
                 const summary =
                     document.getElementById(
                         "reportSummary"
-                    )?.value.trim();
+                    )
+                    ?.value
+                    .trim();
 
 
                 const value =
                     document.getElementById(
                         "reportValue"
-                    )?.value;
+                    )
+                    ?.value;
 
 
                 if (
                     !title ||
                     !ministry ||
                     !summary ||
-                    !value
+                    value === ""
                 ) {
 
-                    alert(
-                        "Please complete all fields."
+                    showToast(
+                        "Please complete all fields.",
+                        "error"
                     );
 
                     return;
@@ -2195,43 +3394,198 @@ window.gdmApp = window.gdmApp || {};
                 }
 
 
-                const report = {
+                try {
 
-                    title,
+                    await appState
+                        .saveReportEntry({
 
-                    ministry,
+                            title,
 
-                    summary,
+                            ministry,
 
-                    value:
-                        Number(value),
+                            summary,
 
-                    submitted_at:
-                        new Date().toISOString(),
+                            value:
+                                Number(
+                                    value
+                                )
 
-                    submitted_by:
-                        appState.currentUser?.id ||
-                        null
-
-                };
+                        });
 
 
-                if (
-                    typeof appState.saveReportEntry ===
-                    "function"
-                ) {
+                    reportForm.reset();
 
-                    await appState.saveReportEntry(
-                        report
+
+                    const formCard =
+                        document.getElementById(
+                            "reportsFormCard"
+                        );
+
+
+                    if (formCard) {
+
+                        formCard.classList.add(
+                            "hidden"
+                        );
+
+                    }
+
+
+                    showToast(
+                        "Report submitted successfully.",
+                        "success"
+                    );
+
+
+                } catch (error) {
+
+                    console.error(
+                        "Report submission failed:",
+                        error
+                    );
+
+
+                    showToast(
+                        "Could not save report: " +
+                        (
+                            error.message ||
+                            "Unknown error"
+                        ),
+                        "error"
                     );
 
                 }
 
+            }
+        );
 
-                appState.renderReports();
+    }
 
 
-                reportForm.reset();
+    // =================================================
+    // REPORT FORM BUTTONS
+    // =================================================
+
+    const addReportBtn =
+        document.getElementById(
+            "addReportBtn"
+        );
+
+
+    const cancelReportBtn =
+        document.getElementById(
+            "cancelReportBtn"
+        );
+
+
+    const reportsFormCard =
+        document.getElementById(
+            "reportsFormCard"
+        );
+
+
+    if (addReportBtn) {
+
+        addReportBtn.addEventListener(
+            "click",
+            () => {
+
+                if (reportsFormCard) {
+
+                    reportsFormCard.classList.toggle(
+                        "hidden"
+                    );
+
+                }
+
+            }
+        );
+
+    }
+
+
+    if (cancelReportBtn) {
+
+        cancelReportBtn.addEventListener(
+            "click",
+            () => {
+
+                if (reportsFormCard) {
+
+                    reportsFormCard.classList.add(
+                        "hidden"
+                    );
+
+                }
+
+                if (reportForm) {
+
+                    reportForm.reset();
+
+                }
+
+            }
+        );
+
+    }
+
+
+    // =================================================
+    // REFRESH REPORTS
+    // =================================================
+
+    const refreshChartBtn =
+        document.getElementById(
+            "refreshChartBtn"
+        );
+
+
+    if (refreshChartBtn) {
+
+        refreshChartBtn.addEventListener(
+            "click",
+            async () => {
+
+                try {
+
+                    showToast(
+                        "Refreshing dashboard data...",
+                        "info"
+                    );
+
+
+                    const data =
+                        await appState
+                            .loadDashboardData();
+
+
+                    appState.dashboardData =
+                        data;
+
+
+                    appState.renderAll();
+
+
+                    showToast(
+                        "Dashboard refreshed.",
+                        "success"
+                    );
+
+
+                } catch (error) {
+
+                    console.error(
+                        "Refresh failed:",
+                        error
+                    );
+
+
+                    showToast(
+                        "Unable to refresh dashboard.",
+                        "error"
+                    );
+
+                }
 
             }
         );
@@ -2260,13 +3614,15 @@ window.gdmApp = window.gdmApp || {};
                 );
 
 
-                themeToggle.textContent =
+                const dark =
                     document.body.classList.contains(
                         "dark"
-                    )
+                    );
 
+
+                themeToggle.textContent =
+                    dark
                         ? "Light mode"
-
                         : "Dark mode";
 
             }
@@ -2276,143 +3632,147 @@ window.gdmApp = window.gdmApp || {};
 
 
     // =================================================
-    // HELPER FUNCTIONS
+    // INITIALIZE APPLICATION
     // =================================================
 
-    function escapeHTML(value) {
+    appState.initializeApp =
+        async function () {
 
-        if (
-            value === null ||
-            value === undefined
-        ) {
+            try {
 
-            return "";
-
-        }
+                appState.showLoading(
+                    true
+                );
 
 
-        return String(value)
-            .replace(
-                /&/g,
-                "&amp;"
-            )
-            .replace(
-                /</g,
-                "&lt;"
-            )
-            .replace(
-                />/g,
-                "&gt;"
-            )
-            .replace(
-                /"/g,
-                "&quot;"
-            )
-            .replace(
-                /'/g,
-                "&#039;"
-            );
-
-    }
+                const supabase =
+                    getSupabase();
 
 
-    function escapeAttribute(value) {
+                if (!supabase) {
 
-        return escapeHTML(value);
+                    throw new Error(
+                        "Supabase client is not initialized."
+                    );
 
-    }
-
-
-    function formatFileSize(size) {
-
-        if (
-            size === null ||
-            size === undefined ||
-            size === ""
-        ) {
-
-            return "-";
-
-        }
+                }
 
 
-        const bytes =
-            Number(size);
+                // -------------------------------------
+                // Get current Supabase session
+                // -------------------------------------
+
+                try {
+
+                    const sessionResult =
+                        await supabase
+                            .auth
+                            .getSession();
 
 
-        if (isNaN(bytes)) {
-
-            return String(size);
-
-        }
-
-
-        if (bytes < 1024) {
-
-            return `${bytes} B`;
-
-        }
+                    const session =
+                        sessionResult
+                            .data
+                            ?.session;
 
 
-        if (bytes < 1024 * 1024) {
+                    if (
+                        session?.user
+                    ) {
 
-            return `${(
-                bytes / 1024
-            ).toFixed(1)} KB`;
+                        // Preserve profile role
+                        // if auth.js already attached it.
 
-        }
-
-
-        if (
-            bytes <
-            1024 *
-            1024 *
-            1024
-        ) {
-
-            return `${(
-                bytes /
-                (1024 * 1024)
-            ).toFixed(1)} MB`;
-
-        }
+                        appState.supabaseUser =
+                            session.user;
 
 
-        return `${(
-            bytes /
-            (1024 *
-            1024 *
-            1024)
-        ).toFixed(1)} GB`;
+                        if (
+                            !appState.currentUser
+                        ) {
 
-    }
+                            appState.currentUser =
+                                session.user;
 
+                        }
 
-    function formatDate(value) {
+                    }
 
-        if (!value) {
-            return "-";
-        }
+                } catch (sessionError) {
 
+                    console.warn(
+                        "Could not read Supabase session:",
+                        sessionError
+                    );
 
-        const date =
-            new Date(value);
-
-
-        if (
-            isNaN(
-                date.getTime()
-            )
-        ) {
-
-            return String(value);
-
-        }
+                }
 
 
-        return date.toLocaleDateString();
+                // -------------------------------------
+                // Load dashboard data
+                // -------------------------------------
 
-    }
+                const data =
+                    await appState
+                        .loadDashboardData();
+
+
+                appState.dashboardData =
+                    data;
+
+
+                appState.renderAll();
+
+
+                appState.updateNavPermissions();
+
+
+                // -------------------------------------
+                // Show dashboard
+                // -------------------------------------
+
+                if (
+                    getCurrentUser()
+                ) {
+
+                    showSection(
+                        "dashboardSection"
+                    );
+
+                }
+
+
+                console.log(
+                    "🟢 GDM Dashboard initialized successfully"
+                );
+
+
+            } catch (error) {
+
+                console.error(
+                    "Dashboard initialization failed:",
+                    error
+                );
+
+
+                showToast(
+                    "Dashboard could not load: " +
+                    (
+                        error.message ||
+                        "Unknown error"
+                    ),
+                    "error"
+                );
+
+            } finally {
+
+                appState.showLoading(
+                    false
+                );
+
+            }
+
+        };
 
 
     // =================================================
@@ -2421,13 +3781,11 @@ window.gdmApp = window.gdmApp || {};
 
     document.addEventListener(
         "DOMContentLoaded",
-        () => {
+        async () => {
 
-            /*
-            auth.js may already have populated
-            currentUser. We first check storage
-            so permissions are applied correctly.
-            */
+            // -----------------------------------------
+            // Load stored user if available
+            // -----------------------------------------
 
             const storedUser =
                 appState.utils.readStorage(
@@ -2444,35 +3802,131 @@ window.gdmApp = window.gdmApp || {};
             }
 
 
+            // -----------------------------------------
+            // Auth state renderer
+            // -----------------------------------------
+
             if (
                 typeof appState.renderAuthState ===
                 "function"
             ) {
 
-                appState.renderAuthState();
+                try {
+
+                    appState.renderAuthState();
+
+                } catch (error) {
+
+                    console.warn(
+                        "renderAuthState warning:",
+                        error
+                    );
+
+                }
 
             }
 
+
+            // -----------------------------------------
+            // Permissions
+            // -----------------------------------------
 
             appState.updateNavPermissions();
 
 
-            /*
-            Start the dashboard after the other
-            scripts have loaded.
-            */
+            // -----------------------------------------
+            // Start application
+            // -----------------------------------------
 
-            if (
-                typeof appState.initializeApp ===
-                "function"
-            ) {
-
-                appState.initializeApp();
-
-            }
+            await appState.initializeApp();
 
         }
     );
 
 
+    // =================================================
+    // SUPABASE AUTH STATE LISTENER
+    // =================================================
+
+    function setupAuthListener() {
+
+        const supabase =
+            getSupabase();
+
+
+        if (!supabase) {
+            return;
+        }
+
+
+        supabase.auth.onAuthStateChange(
+            async (
+                event,
+                session
+            ) => {
+
+                console.log(
+                    "Supabase auth event:",
+                    event
+                );
+
+
+                if (
+                    session?.user
+                ) {
+
+                    appState.supabaseUser =
+                        session.user;
+
+
+                    if (
+                        !appState.currentUser
+                    ) {
+
+                        appState.currentUser =
+                            session.user;
+
+                    }
+
+
+                    if (
+                        typeof appState.renderAuthState ===
+                        "function"
+                    ) {
+
+                        appState.renderAuthState();
+
+                    }
+
+
+                    appState.updateNavPermissions();
+
+                }
+
+            }
+        );
+
+    }
+
+
+    // Give supabase.js time to initialize
+    // before attaching listener.
+
+    if (
+        appState.supabaseReady
+    ) {
+
+        setupAuthListener();
+
+    } else {
+
+        setTimeout(
+            setupAuthListener,
+            500
+        );
+
+    }
+
+
 })();
+```
