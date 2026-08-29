@@ -475,62 +475,32 @@ window.gdmApp = window.gdmApp || {};
     // TOAST
     // =================================================
 
-    function showToast(
-        message,
-        type = "info"
-    ) {
+    function showToast(message, type = "info") {
 
-        const stack =
-            document.getElementById(
-                "toastStack"
-            );
+    const stack = document.getElementById("toastStack");
 
-
-        if (!stack) {
-
-            console.log(
-                `[${type}]`,
-                message
-            );
-
-            return;
-        }
-
-
-        const toast =
-            document.createElement(
-                "div"
-            );
-
-
-        toast.className =
-            `toast toast-${type}`;
-
-
-        toast.textContent =
-            message;
-
-
-        stack.appendChild(
-            toast
-        );
-
-
-        setTimeout(() => {
-
-            toast.classList.add(
-                "hide"
-            );
-
-            setTimeout(() => {
-
-                toast.remove();
-
-            }, 300);
-
-        }, 3500);
-
+    if (!stack) {
+        console.log("[" + type + "]", message);
+        return;
     }
+
+    const toast = document.createElement("div");
+
+    toast.className = "toast toast-" + type;
+    toast.textContent = message;
+
+    stack.appendChild(toast);
+
+    setTimeout(function () {
+
+        toast.classList.add("hide");
+
+        setTimeout(function () {
+            toast.remove();
+        }, 300);
+
+    }, 3500);
+}
 
 
     appState.showToast =
