@@ -3,328 +3,41 @@
 <head> <link rel="icon" href="data:,">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Good Deeds ministries Management System</title>
+  <title>Good Deeds Ministries Management System</title>
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
   <div class="app-shell">
     <aside class="sidebar">
-      <div class="brand">
-        <div>
-          <h1>GDM Portal</h1>
-          <p>Ministry operations dashboard</p>
-        </div>
-        <span id="roleBadge" class="role-badge">Guest</span>
-      </div>
-
+      <div class="brand"><div><h1>GDM Portal</h1><p>Ministry operations dashboard</p></div><span id="roleBadge" class="role-badge">Guest</span></div>
       <nav class="nav-list">
         <a class="nav-item active" href="./gdm-dashboard/overview/overview.html">Overview</a>
-        <a class="nav-item" href="./gdm-dashboard/ministries/ministries.html">ministries</a>
-        <a
-    class="nav-item"
-    data-target="membersSection"
-    href="./gdm-dashboard/members/members.html"
->
-    Members
-</a>
+        <a class="nav-item" href="./gdm-dashboard/ministries/ministries.html">Ministries</a>
+        <a class="nav-item" data-target="membersSection" href="./gdm-dashboard/members/members.html">Members</a>
         <button class="nav-item" data-target="documentsSection">Documents</button>
         <button class="nav-item" data-target="reportsSection">Reports</button>
         <button class="nav-item" data-target="activitySection">Activity</button>
       </nav>
-      <a class="nav-item" href="./gdm-dashboard/tasks/tasks.html">
-    Tasks
-</a>
-
-      <div class="sidebar-footer">
-        <button id="themeToggle" class="ghost-btn">Dark mode</button>
-        <button id="logoutBtn" class="ghost-btn ghost-border">Log out</button>
-      </div>
+      <a class="nav-item" href="./gdm-dashboard/tasks/tasks.html">Tasks</a>
+      <div class="sidebar-footer"><button id="themeToggle" class="ghost-btn">Dark mode</button><button id="logoutBtn" class="ghost-btn ghost-border">Log out</button></div>
     </aside>
-
     <main class="main-content">
-      <header class="topbar">
-        <div>
-          <p class="eyebrow">Good Deeds ministries</p>
-          <h1 id="pageTitle">Management Dashboard</h1>
-        </div>
-        <div class="topbar-actions">
-          <label class="search-box">
-            <input id="globalSearch" type="search" placeholder="Search ministries, docs, updates..." />
-            <span>🔍</span>
-          </label>
-          <button id="quickAddBtn" class="ghost-btn">+ Add note</button>
-        </div>
-      </header>
-
-      <section id="authSection" class="auth-card glass-panel">
-        <div class="auth-heading">
-          <div>
-            <p class="eyebrow">Secure sign in</p>
-            <h2>Access the GDM control center</h2>
-          </div>
-          <span class="badge badge-accent">Supabase ready</span>
-        </div>
-
-        <p class="auth-copy">
-          Sign in with your email and password, or use Google for a fast access path. Forgot your password? Reset it instantly.
-        </p>
-
-        <form id="loginForm" class="auth-form">
-          <input id="email" type="email" required placeholder="Email address" />
-          <input id="password" type="password" required placeholder="Password" />
-          <button type="submit" class="primary-btn">Sign in</button>
-          <button type="button" id="googleSignInBtn" class="secondary-btn">Continue with Google</button>
-        </form>
-
-        <div class="auth-footer">
-          <button type="button" id="forgotPasswordBtn" class="link-btn">Forgot password?</button>
-          <div id="authMessage" class="empty-state"></div>
-        </div>
-      </section>
-
-      <section id="dashboardSection" class="dashboard-grid hidden">
-        <div class="hero-card glass-panel">
-          <div>
-            <p class="eyebrow">Live control center</p>
-            <h2 id="heroTitle">Operational insights for the ministries</h2>
-            <p id="heroSummary">Monitor progress, approvals, documents, and community impact with one modern dashboard.</p>
-            <div class="hero-meta">
-              <span class="badge badge-success" id="liveBadge">Live updates</span>
-              <span class="badge badge-soft">Role: <strong id="userRoleLabel">Viewer</strong></span>
-            </div>
-          </div>
-
-          <div class="hero-stats">
-            <div>
-              <span class="eyebrow">Active ministries</span>
-              <strong id="ministryCount">0</strong>
-            </div>
-            <div>
-              <span class="eyebrow">Pending tasks</span>
-              <strong id="taskCount">0</strong>
-            </div>
-          </div>
-        </div>
-
-        <section class="stats-grid" id="statsGrid"></section>
-
-        <section class="panel glass-panel analytics-panel">
-          <div class="section-header">
-            <h3>Monthly engagement</h3>
-            <span class="eyebrow">Live chart</span>
-          </div>
-          <canvas id="reportChart" width="600" height="260"></canvas>
-        </section>
-
-        <section class="panel glass-panel overview-cards">
-          <div class="panel-block">
-            <h3>Ministry progress</h3>
-            <div id="miniCards" class="mini-cards"></div>
-          </div>
-          <div class="panel-block">
-            <h3>Latest notifications</h3>
-            <ul id="notificationList" class="notification-list"></ul>
-          </div>
-        </section>
-      </section>
-
-      <section id="ministriesSection" class="hidden">
-        <div class="section-toolbar">
-          <div>
-            <p class="eyebrow">Ministries</p>
-            <h2>Team performance and resources</h2>
-          </div>
-          <label class="search-box narrow">
-            <input id="ministriesSearch" type="search" placeholder="Search by ministry or leader..." />
-            <span>🔎</span>
-          </label>
-        </div>
-        <div class="ministry-cards" id="ministryCards"></div>
-
-        <div class="panel glass-panel table-panel">
-          <div class="section-header">
-            <h3>Ministry summary table</h3>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Ministry</th>
-                  <th>Lead</th>
-                  <th>Progress</th>
-                  <th>Members</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody id="ministryTableBody"></tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <section id="documentsSection" class="hidden">
-        <div class="section-toolbar">
-          <div>
-            <p class="eyebrow">Documents</p>
-            <h2>Files, reports, and uploads</h2>
-          </div>
-          <div class="upload-actions">
-            <button id="uploadDocumentBtn" class="primary-btn">Upload document</button>
-            <progress id="documentUploadProgress" class="upload-progress hidden" value="0" max="100"></progress>
-            <input id="documentFileInput" type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.mp4,.mov" hidden />
-          </div>
-        </div>
-
-        <div class="panel glass-panel docs-summary">
-          <div class="doc-summary-card">
-            <span class="eyebrow">Files stored</span>
-            <strong id="documentCount">0</strong>
-          </div>
-          <div class="doc-summary-card">
-            <span class="eyebrow">Active ministries</span>
-            <strong id="docMinistryCount">0</strong>
-          </div>
-          <div class="doc-summary-card">
-            <span class="eyebrow">Recent uploads</span>
-            <strong id="recentUploadsCount">0</strong>
-          </div>
-        </div>
-
-        <div class="panel glass-panel table-panel">
-          <div class="section-header">
-            <h3>Latest documents</h3>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Title</th>
-<th>Ministry</th>
-<th>Type</th>
-<th>Size</th>
-<th>Uploaded</th>
-<th>Action</th>
-                </tr>
-              </thead>
-              <tbody id="documentTableBody"></tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <section id="reportsSection" class="hidden">
-        <div class="section-toolbar">
-          <div>
-            <p class="eyebrow">Reports</p>
-            <h2>Live performance and analytics</h2>
-          </div>
-          <div class="section-actions">
-            <button id="refreshChartBtn" class="secondary-btn">Refresh data</button>
-            <button id="addReportBtn" class="primary-btn">Add report</button>
-          </div>
-        </div>
-
-        <div id="reportsFormCard" class="panel glass-panel report-form-panel hidden">
-          <div class="section-header">
-            <h3>Submit a new report</h3>
-          </div>
-          <form id="reportForm" class="form-grid">
-            <label>
-              Report title
-              <input id="reportTitle" type="text" required placeholder="Report title" />
-            </label>
-            <label>
-              Ministry
-              <input id="reportMinistry" type="text" required placeholder="Ministry name" />
-            </label>
-            <label>
-              Summary
-              <textarea id="reportSummary" rows="3" required placeholder="Short report summary"></textarea>
-            </label>
-            <label>
-              Value
-              <input id="reportValue" type="number" min="0" required placeholder="Numeric value" />
-            </label>
-            <div class="form-actions">
-              <button type="submit" class="primary-btn">Save report</button>
-              <button type="button" id="cancelReportBtn" class="ghost-btn">Cancel</button>
-            </div>
-          </form>
-        </div>
-
-        <div class="panel glass-panel report-grid">
-          <div class="report-card">
-            <h4>Monthly reach</h4>
-            <p>Impact and attendance growth across ministries.</p>
-            <strong id="reachMetric">0</strong>
-          </div>
-          <div class="report-card">
-            <h4>Volunteer hours</h4>
-            <p>Hours logged by teams across the last 30 days.</p>
-            <strong id="hoursMetric">0</strong>
-          </div>
-          <div class="report-card">
-            <h4>Approval rating</h4>
-            <p>Ministry progress reviews and compliance.</p>
-            <strong id="approvalMetric">0%</strong>
-          </div>
-        </div>
-
-        <section class="panel glass-panel table-panel">
-          <div class="section-header">
-            <h3>Submitted reports</h3>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Title</th>
-                  <th>Ministry</th>
-                  <th>Summary</th>
-                  <th>Value</th>
-                  <th>Submitted</th>
-                </tr>
-              </thead>
-              <tbody id="reportsTableBody"></tbody>
-            </table>
-          </div>
-        </section>
-      </section>
-
-      <section id="activitySection" class="hidden">
-        <div class="section-toolbar">
-          <div>
-            <p class="eyebrow">Activity</p>
-            <h2>Recent updates and timeline</h2>
-          </div>
-        </div>
-
-        <div class="panel glass-panel timeline-panel">
-          <ul id="activityTimeline" class="timeline-list"></ul>
-        </div>
-      </section>
-
-      <div id="loadingSkeleton" class="loading-overlay hidden">
-        <div class="skeleton-card"></div>
-        <div class="skeleton-card"></div>
-        <div class="skeleton-card"></div>
-      </div>
+      <header class="topbar"><div><p class="eyebrow">Good Deeds Ministries</p><h1 id="pageTitle">Management Dashboard</h1></div><div class="topbar-actions"><label class="search-box"><input id="globalSearch" type="search" placeholder="Search ministries, docs, updates..."/><span>🔍</span></label><button id="quickAddBtn" class="ghost-btn">+ Add note</button></div></header>
+      <section id="authSection" class="auth-card glass-panel"><div class="auth-heading"><div><p class="eyebrow">Secure sign in</p><h2>Access the GDM control center</h2></div><span class="badge badge-accent">Supabase ready</span></div><p class="auth-copy">Sign in with your email and password, or use Google for a fast access path. Forgot your password? Reset it instantly.</p><form id="loginForm" class="auth-form"><input id="email" type="email" required placeholder="Email address"/><input id="password" type="password" required placeholder="Password"/><button type="submit" class="primary-btn">Sign in</button><button type="button" id="googleSignInBtn" class="secondary-btn">Continue with Google</button></form><div class="auth-footer"><button type="button" id="forgotPasswordBtn" class="link-btn">Forgot password?</button><div id="authMessage" class="empty-state"></div></div></section>
+      <section id="dashboardSection" class="dashboard-grid hidden"><div class="hero-card glass-panel"><div><p class="eyebrow">Live control center</p><h2 id="heroTitle">Operational insights for the ministries</h2><p id="heroSummary">Monitor progress, approvals, documents, and community impact with one modern dashboard.</p><div class="hero-meta"><span class="badge badge-success" id="liveBadge">Live updates</span><span class="badge badge-soft">Role: <strong id="userRoleLabel">Viewer</strong></span></div></div><div class="hero-stats"><div><span class="eyebrow">Active ministries</span><strong id="ministryCount">0</strong></div><div><span class="eyebrow">Pending tasks</span><strong id="taskCount">0</strong></div></div></div><section class="stats-grid" id="statsGrid"></section><section class="panel glass-panel analytics-panel"><div class="section-header"><h3>Monthly engagement</h3><span class="eyebrow">Live chart</span></div><canvas id="reportChart" width="600" height="260"></canvas></section><section class="panel glass-panel overview-cards"><div class="panel-block"><h3>Ministry progress</h3><div id="miniCards" class="mini-cards"></div></div><div class="panel-block"><h3>Latest notifications</h3><ul id="notificationList" class="notification-list"></ul></div></section></section>
+      <section id="ministriesSection" class="hidden"><div class="section-toolbar"><div><p class="eyebrow">Ministries</p><h2>Team performance and resources</h2></div><label class="search-box narrow"><input id="ministriesSearch" type="search" placeholder="Search by ministry or leader..."/><span>🔎</span></label></div><div class="ministry-cards" id="ministryCards"></div><div class="panel glass-panel table-panel"><div class="section-header"><h3>Ministry summary table</h3></div><div class="table-wrap"><table><thead><tr><th>Ministry</th><th>Lead</th><th>Progress</th><th>Members</th><th>Status</th></tr></thead><tbody id="ministryTableBody"></tbody></table></div></div></section>
+      <section id="documentsSection" class="hidden"><div class="section-toolbar"><div><p class="eyebrow">Documents</p><h2>Files, reports, and uploads</h2></div><div class="upload-actions"><button id="uploadDocumentBtn" class="primary-btn">Upload document</button><progress id="documentUploadProgress" class="upload-progress hidden" value="0" max="100"></progress><input id="documentFileInput" type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.mp4,.mov" hidden/></div></div><div class="panel glass-panel docs-summary"><div class="doc-summary-card"><span class="eyebrow">Files stored</span><strong id="documentCount">0</strong></div><div class="doc-summary-card"><span class="eyebrow">Active ministries</span><strong id="docMinistryCount">0</strong></div><div class="doc-summary-card"><span class="eyebrow">Recent uploads</span><strong id="recentUploadsCount">0</strong></div></div><div class="panel glass-panel table-panel"><div class="section-header"><h3>Latest documents</h3></div><div class="table-wrap"><table><thead><tr><th>Title</th><th>Ministry</th><th>Type</th><th>Size</th><th>Uploaded</th><th>Action</th></tr></thead><tbody id="documentTableBody"></tbody></table></div></div></section>
+      <section id="reportsSection" class="hidden"><div class="section-toolbar"><div><p class="eyebrow">Reports</p><h2>Live performance and analytics</h2></div><div class="section-actions"><button id="refreshChartBtn" class="secondary-btn">Refresh data</button><button id="addReportBtn" class="primary-btn">Add report</button></div></div><div id="reportsFormCard" class="panel glass-panel report-form-panel hidden"><div class="section-header"><h3>Submit a new report</h3></div><form id="reportForm" class="form-grid"><label>Report title<input id="reportTitle" type="text" required placeholder="Report title"/></label><label>Ministry<input id="reportMinistry" type="text" required placeholder="Ministry name"/></label><label>Summary<textarea id="reportSummary" rows="3" required placeholder="Short report summary"></textarea></label><label>Value<input id="reportValue" type="number" min="0" required placeholder="Numeric value"/></label><div class="form-actions"><button type="submit" class="primary-btn">Save report</button><button type="button" id="cancelReportBtn" class="ghost-btn">Cancel</button></div></form></div><div class="panel glass-panel report-grid"><div class="report-card"><h4>Monthly reach</h4><p>Impact and attendance growth across ministries.</p><strong id="reachMetric">0</strong></div><div class="report-card"><h4>Volunteer hours</h4><p>Hours logged by teams across the last 30 days.</p><strong id="hoursMetric">0</strong></div><div class="report-card"><h4>Approval rating</h4><p>Ministry progress reviews and compliance.</p><strong id="approvalMetric">0%</strong></div></div><section class="panel glass-panel table-panel"><div class="section-header"><h3>Submitted reports</h3></div><div class="table-wrap"><table><thead><tr><th>Title</th><th>Ministry</th><th>Summary</th><th>Value</th><th>Submitted</th></tr></thead><tbody id="reportsTableBody"></tbody></table></div></section></section>
+      <section id="activitySection" class="hidden"><div class="section-toolbar"><div><p class="eyebrow">Activity</p><h2>Recent updates and timeline</h2></div></div><div class="panel glass-panel timeline-panel"><ul id="activityTimeline" class="timeline-list"></ul></div></section>
+      <div id="loadingSkeleton" class="loading-overlay hidden"><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div></div>
     </main>
   </div>
-
   <div id="toastStack" class="toast-stack"></div>
-
-<!-- Supabase SDK -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-
-<!-- Supabase initialization -->
-<script src="./js/supabase.js"></script>
-
-<!-- GDM application scripts -->
-<script src="scripts/auth.js"></script>
-<script src="scripts/firestore.js"></script>
-<script src="scripts/dashboard.js"></script>
-<script src="scripts/notifications.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./js/supabase.js"></script>
+  <script src="scripts/auth.js"></script>
+  <script src="scripts/dashboard.js"></script>
+  <script src="scripts/notifications.js"></script>
+  <script src="scripts/ministries.js"></script>
 </body>
 </html>
