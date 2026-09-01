@@ -45,9 +45,8 @@
             <div class="hero-stats">
                 <div><span class="eyebrow">All Tasks</span><strong id="allTasksCount">0</strong></div>
                 <div><span class="eyebrow">My Tasks</span><strong id="myTasksCount">0</strong></div>
-                <div><span class="eyebrow">Due Today</span><strong id="dueTodayCount">0</strong></div>
-                <div><span class="eyebrow">Overdue</span><strong id="overdueTasksCount">0</strong></div>
-                <div><span class="eyebrow">Upcoming</span><strong id="upcomingTasksCount">0</strong></div>
+                <div><span class="eyebrow">Pending</span><strong id="pendingTasksCount">0</strong></div>
+                <div><span class="eyebrow">In Progress</span><strong id="inProgressTasksCount">0</strong></div>
                 <div><span class="eyebrow">Completed</span><strong id="completedTasksCount">0</strong></div>
             </div>
         </section>
@@ -58,14 +57,14 @@
                 <select id="taskFilter">
                     <option value="all">All tasks</option>
                     <option value="my">My Tasks</option>
-                    <option value="overdue">Overdue</option>
-                    <option value="upcoming">Upcoming</option>
+                    <option value="pending">Pending</option>
+                    <option value="in_progress">In Progress</option>
                     <option value="completed">Completed</option>
                 </select>
             </div>
             <div class="table-wrapper">
                 <table>
-                    <thead><tr><th>Task</th><th>Assigned To</th><th>Ministry</th><th>Due Date</th><th>Status</th><th>Progress</th><th>Actions</th></tr></thead>
+                    <thead><tr><th>Task</th><th>Assigned To</th><th>Ministry</th><th>Start Date</th><th>Status</th><th>Progress</th><th>Actions</th></tr></thead>
                     <tbody id="tasksTableBody"><tr><td colspan="7">Loading tasks...</td></tr></tbody>
                 </table>
             </div>
