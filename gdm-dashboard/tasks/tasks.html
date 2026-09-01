@@ -1,458 +1,81 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tasks | GDM Portal</title>
-
-    <link rel="stylesheet"
-          href="../../style.css">
-
-    <link rel="icon"
-          href="data:,">
-
+    <link rel="stylesheet" href="../../style.css">
+    <link rel="icon" href="data:,">
 </head>
-
-
 <body>
-
 <div class="app-shell">
-
-
-    <!-- =====================================================
-         SIDEBAR
-    ====================================================== -->
-
     <aside class="sidebar">
-
         <div class="brand">
-
-            <div>
-
-                <h1>
-                    GDM Portal
-                </h1>
-
-                <p>
-                    Ministry operations dashboard
-                </p>
-
-            </div>
-
-            <span class="role-badge">
-                Admin
-            </span>
-
+            <div><h1>GDM Portal</h1><p>Ministry operations dashboard</p></div>
+            <span id="taskRoleBadge" class="role-badge">Guest</span>
         </div>
-
-
-        <!-- =================================================
-             NAVIGATION
-        ================================================== -->
-
         <nav class="nav-list">
-
-            <a class="nav-item"
-               href="../../index.html">
-
-                Overview
-
-            </a>
-
-
-            <a class="nav-item"
-               href="../ministries/ministries.html">
-
-                Ministries
-
-            </a>
-
-
-            <a class="nav-item"
-               href="../members/members.html">
-
-                Members
-
-            </a>
-
-
-            <a class="nav-item active"
-               href="./tasks.html">
-
-                Tasks
-
-            </a>
-
-
-            <a class="nav-item"
-               href="../../index.html">
-
-                Documents
-
-            </a>
-
-
-            <a class="nav-item"
-               href="../../index.html">
-
-                Reports
-
-            </a>
-
-
-            <a class="nav-item"
-               href="../../index.html">
-
-                Activity
-
-            </a>
-
+            <a class="nav-item" href="../../index.html">Overview</a>
+            <a class="nav-item" href="../ministries/ministries.html">Ministries</a>
+            <a class="nav-item" href="../members/members.html">Members</a>
+            <a class="nav-item active" href="./tasks.html">Tasks</a>
+            <a class="nav-item" href="../../index.html">Documents</a>
+            <a class="nav-item" href="../../index.html">Reports</a>
+            <a class="nav-item" href="../../index.html">Activity</a>
         </nav>
-
-
-        <!-- =================================================
-             SIDEBAR FOOTER
-        ================================================== -->
-
         <div class="sidebar-footer">
-
-            <button id="themeToggle"
-                    class="ghost-btn">
-
-                Dark mode
-
-            </button>
-
-
-            <button id="logoutBtn"
-                    class="ghost-btn ghost-border">
-
-                Log out
-
-            </button>
-
+            <button id="themeToggle" class="ghost-btn">Dark mode</button>
+            <button id="logoutBtn" class="ghost-btn ghost-border">Log out</button>
         </div>
-
     </aside>
 
-
-
-    <!-- =====================================================
-         MAIN CONTENT
-    ====================================================== -->
-
     <main class="main-content">
-
-
-        <!-- =================================================
-             TOP BAR
-        ================================================== -->
-
         <header class="topbar">
-
-            <div>
-
-                <p class="eyebrow">
-                    Good Deeds ministries
-                </p>
-
-                <h1>
-                    Task Management
-                </h1>
-
-            </div>
-
-
-            <div class="topbar-actions">
-
-                <span class="badge badge-soft">
-
-                    Role:
-                    <strong>
-                        Admin
-                    </strong>
-
-                </span>
-
-            </div>
-
+            <div><p class="eyebrow">Good Deeds Ministries</p><h1>Task Management</h1></div>
+            <div class="topbar-actions"><span class="badge badge-soft">Role: <strong id="taskRoleLabel">Guest</strong></span></div>
         </header>
 
-
-
-        <!-- =================================================
-             TASK HERO
-        ================================================== -->
-
         <section class="hero-card glass-panel">
-
-            <div>
-
-                <p class="eyebrow">
-                    Task Management
-                </p>
-
-                <h1>
-                    Tasks
-                </h1>
-
-                <p>
-                    Assign, track, and complete ministry tasks.
-                </p>
-
-            </div>
-
-
-            <button id="addTaskButton"
-                    class="primary-btn">
-
-                + Assign Task
-
-            </button>
-
+            <div><p class="eyebrow">Task Management</p><h1>Tasks</h1><p>Assign, track, and complete ministry tasks.</p></div>
+            <button id="addTaskButton" class="primary-btn">+ Assign Task</button>
         </section>
 
-
-
-        <!-- =================================================
-             TASK STATISTICS
-        ================================================== -->
-
         <section class="panel glass-panel">
-
-            <div class="section-header">
-
-                <h2>
-                    Task Overview
-                </h2>
-
-            </div>
-
-
+            <div class="section-header"><h2>Task Overview</h2></div>
             <div class="hero-stats">
-
-
-                <div>
-
-                    <span class="eyebrow">
-                        All Tasks
-                    </span>
-
-                    <strong id="allTasksCount">
-                        0
-                    </strong>
-
-                </div>
-
-
-                <div>
-
-                    <span class="eyebrow">
-                        My Tasks
-                    </span>
-
-                    <strong id="myTasksCount">
-                        0
-                    </strong>
-
-                </div>
-
-
-                <div>
-
-                    <span class="eyebrow">
-                        Due Today
-                    </span>
-
-                    <strong id="dueTodayCount">
-                        0
-                    </strong>
-
-                </div>
-
-
-                <div>
-
-                    <span class="eyebrow">
-                        Overdue
-                    </span>
-
-                    <strong id="overdueTasksCount">
-                        0
-                    </strong>
-
-                </div>
-
-
-                <div>
-
-                    <span class="eyebrow">
-                        Upcoming
-                    </span>
-
-                    <strong id="upcomingTasksCount">
-                        0
-                    </strong>
-
-                </div>
-
-
-                <div>
-
-                    <span class="eyebrow">
-                        Completed
-                    </span>
-
-                    <strong id="completedTasksCount">
-                        0
-                    </strong>
-
-                </div>
-
-
+                <div><span class="eyebrow">All Tasks</span><strong id="allTasksCount">0</strong></div>
+                <div><span class="eyebrow">My Tasks</span><strong id="myTasksCount">0</strong></div>
+                <div><span class="eyebrow">Due Today</span><strong id="dueTodayCount">0</strong></div>
+                <div><span class="eyebrow">Overdue</span><strong id="overdueTasksCount">0</strong></div>
+                <div><span class="eyebrow">Upcoming</span><strong id="upcomingTasksCount">0</strong></div>
+                <div><span class="eyebrow">Completed</span><strong id="completedTasksCount">0</strong></div>
             </div>
-
         </section>
-
-
-
-        <!-- =================================================
-             TASK LIST
-        ================================================== -->
 
         <section class="panel glass-panel">
-
-
             <div class="section-header">
-
-                <h2>
-                    All Tasks
-                </h2>
-
-
+                <h2>All Tasks</h2>
                 <select id="taskFilter">
-
-                    <option value="all">
-                        All tasks
-                    </option>
-
-                    <option value="my">
-                        My Tasks
-                    </option>
-
-                    <option value="overdue">
-                        Overdue
-                    </option>
-
-                    <option value="upcoming">
-                        Upcoming
-                    </option>
-
-                    <option value="completed">
-                        Completed
-                    </option>
-
+                    <option value="all">All tasks</option>
+                    <option value="my">My Tasks</option>
+                    <option value="overdue">Overdue</option>
+                    <option value="upcoming">Upcoming</option>
+                    <option value="completed">Completed</option>
                 </select>
-
             </div>
-
-
-
             <div class="table-wrapper">
-
                 <table>
-
-                    <thead>
-
-                        <tr>
-
-                            <th>
-                                Task
-                            </th>
-
-                            <th>
-                                Assigned To
-                            </th>
-
-                            <th>
-                                Ministry
-                            </th>
-
-                            <th>
-                                Due Date
-                            </th>
-
-                            <th>
-                                Status
-                            </th>
-
-                            <th>
-                                Progress
-                            </th>
-                            <th>
-    Actions
-</th>
-
-                        </tr>
-
-                    </thead>
-
-
-                    <tbody id="tasksTableBody">
-
-                        <tr>
-
-                            <td colspan="6">
-
-                                No tasks available.
-
-                            </td>
-
-                        </tr>
-
-                    </tbody>
-
+                    <thead><tr><th>Task</th><th>Assigned To</th><th>Ministry</th><th>Due Date</th><th>Status</th><th>Progress</th><th>Actions</th></tr></thead>
+                    <tbody id="tasksTableBody"><tr><td colspan="7">Loading tasks...</td></tr></tbody>
                 </table>
-
             </div>
-
         </section>
-
-
     </main>
-
-
 </div>
 
-
-
-<!-- Firebase Core -->
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-
-<!-- Firebase Authentication -->
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-
-<!-- Firebase Firestore -->
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-
-<!-- Firebase Storage -->
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-
-<!-- GDM Firebase Configuration -->
-<script src="../../js/firebase.js"></script>
-
-<!-- GDM Application Scripts -->
-<script src="../../scripts/firestore.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../../js/supabase.js"></script>
 <script src="../../scripts/auth.js"></script>
 <script src="../../scripts/tasks.js"></script>
-
 </body>
-
 </html>
-```
