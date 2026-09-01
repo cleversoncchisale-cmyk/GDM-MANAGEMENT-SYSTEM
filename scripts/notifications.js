@@ -51,7 +51,7 @@ window.gdmApp = window.gdmApp || {};
         renderNotifications();
 
         if (typeof app.showToast === "function") {
-            app.showToast(item.title, app.message || message);
+            app.showToast(item.title, item.message);
         }
     }
 
