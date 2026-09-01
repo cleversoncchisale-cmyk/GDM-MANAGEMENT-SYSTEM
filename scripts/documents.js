@@ -2,10 +2,6 @@
    GDM DOCUMENTS — SUPABASE
    Table: documents
    Storage bucket: gdm-documents
-
-   Verified fields from database review:
-   file_size, ministry_id, department_id, uploaded_by,
-   is_public, is_active, created_at, updated_at
 ===================================================== */
 window.gdmApp = window.gdmApp || {};
 (function () {
@@ -13,14 +9,28 @@ window.gdmApp = window.gdmApp || {};
     const app = window.gdmApp;
     const BUCKET = "gdm-documents";
     const db = () => app.supabase || null;
-    const esc = v => String(v ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;");
+    const esc = v => String(v ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;").replace(/'/g,"&#039;");
     const date = v => { if(!v) return "-"; const d=new Date(v); return Number.isNaN(d.getTime())?"-":d.toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric"}); };
     const size = n => { n=Number(n)||0; if(n<1024)return n+" B"; if(n<1048576)return (n/1024).toFixed(1)+" KB"; if(n<1073741824)return (n/1048576).toFixed(1)+" MB"; return (n/1073741824).toFixed(1)+" GB"; };
     const name = (row, fallback) => row?.title || row?.file_name || row?.filename || row?.name || fallback || "Untitled document";
     const notify = (m,t="info") => typeof app.showToast === "function" ? app.showToast(m,t) : console.log(m);
 
+    async function waitForSession() {
+        const client = db();
+        if (!client) return null;
+        const { data } = await client.auth.getSession();
+        return data?.session || null;
+    }
+
     async function loadDocuments() {
-        const client=db(); if(!client) return [];
+        const client=db();
+        if(!client) return [];
+        const session = await waitForSession();
+        if(!session?.user){
+            app.documents=[];
+            render([]);
+            return [];
+        }
         const {data,error}=await client.from("documents").select("*").eq("is_active",true).order("created_at",{ascending:false});
         if(error){console.error("Documents load failed:",error);notify("Unable to load documents: "+error.message,"error");return [];}
         app.documents=data||[]; render(app.documents); return app.documents;
@@ -46,7 +56,8 @@ window.gdmApp = window.gdmApp || {};
 
     async function upload(file, ministryId=null, departmentId=null) {
         const client=db(); if(!client||!file)return;
-        const user=app.currentUser||app.supabaseUser; const uid=user?.id||user?.uid; if(!uid){notify("Please sign in first.","error");return;}
+        const session=await waitForSession(); const uid=session?.user?.id;
+        if(!uid){notify("Please sign in first.","error");return;}
         const path=`${uid}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g,"_")}`;
         const progress=document.getElementById("documentUploadProgress"); if(progress){progress.classList.remove("hidden");progress.value=10;}
         const up=await client.storage.from(BUCKET).upload(path,file,{upsert:false});
@@ -58,12 +69,12 @@ window.gdmApp = window.gdmApp || {};
         if(progress){progress.value=100;setTimeout(()=>progress.classList.add("hidden"),500);} notify("Document uploaded successfully.","success"); await loadDocuments();
     }
 
-    document.addEventListener("DOMContentLoaded",()=>{
+    document.addEventListener("DOMContentLoaded",async()=>{
         const input=document.getElementById("documentFileInput"), button=document.getElementById("uploadDocumentBtn");
         if(button&&input)button.addEventListener("click",()=>input.click());
         if(input)input.addEventListener("change",()=>{const file=input.files?.[0];if(file)upload(file);input.value="";});
         document.addEventListener("click",e=>{const b=e.target.closest(".document-open-btn");if(b)openDocument(b.dataset.documentId);});
-        loadDocuments();
+        await loadDocuments();
     });
     app.gdmDocuments={loadDocuments,upload,openDocument,render};
 })();
