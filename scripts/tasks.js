@@ -35,6 +35,15 @@ window.gdmApp = window.gdmApp || {};
     function progress(t) { return Math.max(0, Math.min(100, Number(t.progress) || 0)); }
     function show(message,type="info") { if (typeof app.showToast === "function") app.showToast(message,type); else console.log(message); }
 
+    async function waitForAuthenticatedUser(timeoutMs = 10000) {
+        const started = Date.now();
+        while (!user() && Date.now() - started < timeoutMs) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        state.currentUser = user();
+        return state.currentUser;
+    }
+
     async function loadPeople() {
         const client=db(); if (!client) return;
         const {data,error}=await client.from("people").select("*").order("created_at",{ascending:true});
@@ -174,7 +183,9 @@ window.gdmApp = window.gdmApp || {};
     }
 
     document.addEventListener("DOMContentLoaded",async()=>{
-        state.currentUser=user(); const u=state.currentUser; const role=(u?.roleLabel || u?.role || "Guest").replace(/_/g," ").replace(/\b\w/g,m=>m.toUpperCase());
+        await waitForAuthenticatedUser();
+        const u=state.currentUser;
+        const role=(u?.roleLabel || u?.role || "Guest").replace(/_/g," ").replace(/\b\w/g,m=>m.toUpperCase());
         const rb=document.getElementById("taskRoleBadge"), rl=document.getElementById("taskRoleLabel"); if(rb)rb.textContent=role;if(rl)rl.textContent=role;
         const filter=document.getElementById("taskFilter"); if(filter)filter.addEventListener("change",render);
         const add=document.getElementById("addTaskButton"); if(add)add.addEventListener("click",createTaskForm);
