@@ -19,6 +19,15 @@ window.gdmApp = window.gdmApp || {};
         else console.log(message);
     }
 
+    function escapeHTML(value) {
+        return String(value ?? "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
     function normalize(row) {
         return {
             ...row,
@@ -28,11 +37,64 @@ window.gdmApp = window.gdmApp || {};
             description: row.description || "",
             leader: row.leader || row.lead || row.leader_name || "",
             members: Number(row.members ?? row.member_count ?? 0),
-            progress: Number(row.progress ?? 0),
+            progress: Math.max(0, Math.min(100, Number(row.progress ?? 0))),
             status: row.status || "Active",
             created_at: row.created_at || null,
             updated_at: row.updated_at || null
         };
+    }
+
+    function renderMinistries(items = app.ministries || []) {
+        const cards = document.getElementById("ministryCards");
+        const tableBody = document.getElementById("ministryTableBody");
+        const totalMinistries = document.getElementById("totalMinistriesCount");
+        const totalMembers = document.getElementById("totalMembersCount");
+
+        const ministries = items.map(normalize);
+
+        if (totalMinistries) totalMinistries.textContent = ministries.length;
+        if (totalMembers) {
+            totalMembers.textContent = ministries.reduce((sum, item) => sum + item.members, 0);
+        }
+
+        if (cards) {
+            cards.innerHTML = ministries.length
+                ? ministries.map(item => `
+                    <article class="ministry-card glass-panel">
+                        <div class="section-header">
+                            <div>
+                                <p class="eyebrow">Ministry</p>
+                                <h3>${escapeHTML(item.title)}</h3>
+                            </div>
+                            <span class="badge badge-success">${escapeHTML(item.status)}</span>
+                        </div>
+                        <p>${escapeHTML(item.description || "No description available.")}</p>
+                        <div class="ministry-meta">
+                            <span>Lead: <strong>${escapeHTML(item.leader || "Not assigned")}</strong></span>
+                            <span>Members: <strong>${item.members}</strong></span>
+                        </div>
+                        <div class="progress-track" aria-label="${item.progress}% complete">
+                            <div class="progress-fill" style="width:${item.progress}%"></div>
+                        </div>
+                        <small>${item.progress}% progress</small>
+                    </article>
+                `).join("")
+                : '<div class="empty-state">No ministries found.</div>';
+        }
+
+        if (tableBody) {
+            tableBody.innerHTML = ministries.length
+                ? ministries.map(item => `
+                    <tr>
+                        <td><strong>${escapeHTML(item.title)}</strong></td>
+                        <td>${escapeHTML(item.leader || "Not assigned")}</td>
+                        <td>${item.progress}%</td>
+                        <td>${item.members}</td>
+                        <td>${escapeHTML(item.status)}</td>
+                    </tr>
+                `).join("")
+                : '<tr><td colspan="5">No ministries found.</td></tr>';
+        }
     }
 
     async function loadMinistries() {
@@ -54,11 +116,7 @@ window.gdmApp = window.gdmApp || {};
         }
 
         app.ministries = (data || []).map(normalize);
-
-        if (typeof app.renderMinistries === "function") {
-            app.renderMinistries();
-        }
-
+        renderMinistries();
         return app.ministries;
     }
 
@@ -94,7 +152,7 @@ window.gdmApp = window.gdmApp || {};
         }
 
         app.ministries = [normalize(created), ...(app.ministries || [])];
-        if (typeof app.renderMinistries === "function") app.renderMinistries();
+        renderMinistries();
         show("Ministry created successfully.", "success");
         return created;
     }
@@ -117,10 +175,8 @@ window.gdmApp = window.gdmApp || {};
         }
 
         const next = normalize(data);
-        app.ministries = (app.ministries || []).map(item =>
-            item.id === id ? next : item
-        );
-        if (typeof app.renderMinistries === "function") app.renderMinistries();
+        app.ministries = (app.ministries || []).map(item => item.id === id ? next : item);
+        renderMinistries();
         show("Ministry information updated.", "success");
         return true;
     }
@@ -143,22 +199,26 @@ window.gdmApp = window.gdmApp || {};
         }
 
         app.ministries = (app.ministries || []).filter(item => item.id !== id);
-        if (typeof app.renderMinistries === "function") app.renderMinistries();
+        renderMinistries();
         show("Ministry deleted.", "success");
         return true;
     }
 
     function searchMinistries(keyword) {
         const term = String(keyword || "").trim().toLowerCase();
-        if (!term) return [...(app.ministries || [])];
+        const results = !term
+            ? [...(app.ministries || [])]
+            : (app.ministries || []).filter(ministry =>
+                String(ministry.title || "").toLowerCase().includes(term) ||
+                String(ministry.leader || "").toLowerCase().includes(term) ||
+                String(ministry.description || "").toLowerCase().includes(term)
+            );
 
-        return (app.ministries || []).filter(ministry =>
-            String(ministry.title || "").toLowerCase().includes(term) ||
-            String(ministry.leader || "").toLowerCase().includes(term) ||
-            String(ministry.description || "").toLowerCase().includes(term)
-        );
+        renderMinistries(results);
+        return results;
     }
 
+    app.renderMinistries = renderMinistries;
     app.loadMinistries = loadMinistries;
     app.addMinistry = addMinistry;
     app.updateMinistry = updateMinistry;
@@ -166,6 +226,11 @@ window.gdmApp = window.gdmApp || {};
     app.searchMinistries = searchMinistries;
 
     document.addEventListener("DOMContentLoaded", () => {
+        const search = document.getElementById("ministriesSearch");
+        if (search) {
+            search.addEventListener("input", () => searchMinistries(search.value));
+        }
+
         loadMinistries();
     });
 })();
