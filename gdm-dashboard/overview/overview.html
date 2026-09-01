@@ -1,8 +1,70 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><link rel="icon" href="data:,"><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>GDM Dashboard Overview</title><link rel="stylesheet" href="../../style.css"></head>
-<body><div class="page-shell"><header class="page-header"><div class="header-brand"><a href="../../index.html">Home</a><span> / </span><strong>Overview</strong></div><nav class="header-nav"><a class="nav-item" href="../ministries/ministries.html">Ministries</a><a class="nav-item" href="../members/members.html">Members</a><a class="nav-item" href="../tasks/tasks.html">Tasks</a></nav></header>
-<main class="main-content"><section class="hero-card glass-panel"><div><p class="eyebrow">Live control center</p><h1 id="heroTitle">Operational insights for the ministries</h1><p id="heroSummary">Monitor progress, approvals, documents, and community impact with one modern dashboard.</p><div class="hero-meta"><span class="badge badge-success">Live updates</span><span class="badge badge-soft">Role: <strong id="overviewRoleLabel">Viewer</strong></span></div></div><div class="hero-stats"><div><span class="eyebrow">Active ministries</span><strong id="ministryCount">0</strong></div><div><span class="eyebrow">Pending tasks</span><strong id="pendingTasksCount">0</strong></div><div><span class="eyebrow">Reports submitted</span><strong id="reportSubmissionCount">0</strong></div><div><span class="eyebrow">Team members</span><strong id="memberCount">0</strong></div></div></section>
-<section class="panel glass-panel analytics-panel"><div class="section-header"><h2>Monthly engagement</h2><span class="eyebrow">Live chart</span></div><canvas id="reportChart" width="600" height="260"></canvas></section><section class="panel glass-panel overview-cards"><div class="panel-block"><h3>Ministry progress</h3><div id="miniCards" class="mini-cards"></div></div><div class="panel-block"><h3>Latest notifications</h3><ul id="notificationList" class="notification-list"></ul></div></section></main></div><div id="toastStack" class="toast-stack"></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="../../js/supabase.js"></script><script src="../../scripts/auth.js"></script><script src="../../scripts/dashboard.js"></script><script src="../../scripts/notifications.js"></script><script src="../../scripts/ministries.js"></script>
-</body></html>
+<head>
+  <link rel="icon" href="data:,">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GDM Dashboard Overview</title>
+  <link rel="stylesheet" href="../../style.css">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="page-header">
+      <div class="header-brand">
+        <a href="../../index.html">Home</a><span> / </span><strong>Overview</strong>
+      </div>
+      <nav class="header-nav">
+        <a class="nav-item" href="../ministries/ministries.html">Ministries</a>
+        <a class="nav-item" href="../members/members.html">Members</a>
+        <a class="nav-item" href="../tasks/tasks.html">Tasks</a>
+      </nav>
+    </header>
+
+    <main class="main-content">
+      <section class="hero-card glass-panel">
+        <div>
+          <p class="eyebrow">Live control center</p>
+          <h1 id="heroTitle">Operational insights for the ministries</h1>
+          <p id="heroSummary">Monitor progress, approvals, documents, and community impact with one modern dashboard.</p>
+          <div class="hero-meta">
+            <span class="badge badge-success">Live updates</span>
+            <span class="badge badge-soft">Role: <strong id="overviewRoleLabel">Viewer</strong></span>
+          </div>
+        </div>
+        <div class="hero-stats">
+          <div><span class="eyebrow">Active ministries</span><strong id="ministryCount">0</strong></div>
+          <div><span class="eyebrow">Pending tasks</span><strong id="pendingTasksCount">0</strong></div>
+          <div><span class="eyebrow">Reports submitted</span><strong id="reportSubmissionCount">0</strong></div>
+          <div><span class="eyebrow">Team members</span><strong id="memberCount">0</strong></div>
+        </div>
+      </section>
+
+      <section class="panel glass-panel analytics-panel">
+        <div class="section-header"><h2>Monthly engagement</h2><span class="eyebrow">Live chart</span></div>
+        <canvas id="reportChart" width="600" height="260"></canvas>
+      </section>
+
+      <section class="panel glass-panel overview-cards">
+        <div class="panel-block">
+          <h3>Ministry progress</h3>
+          <div id="miniCards" class="mini-cards"></div>
+        </div>
+        <div class="panel-block">
+          <h3>Latest notifications</h3>
+          <ul id="notificationList" class="notification-list"></ul>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toastStack" class="toast-stack"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../../js/supabase.js"></script>
+  <script src="../../scripts/auth.js"></script>
+  <script src="../../scripts/dashboard.js"></script>
+  <script src="../../scripts/notifications.js"></script>
+  <script src="../../scripts/ministries.js"></script>
+  <script src="../../scripts/overview.js"></script>
+</body>
+</html>
