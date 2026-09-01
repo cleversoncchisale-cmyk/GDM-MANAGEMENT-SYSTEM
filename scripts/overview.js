@@ -4,11 +4,6 @@
  Overview Page Integration
  Supabase source of truth
 ====================================================
-
-This module is intentionally separate from the legacy dashboard
-renderer because the overview page has its own DOM structure.
-It reads the real schema without substituting profiles for people.
-====================================================
 */
 
 window.gdmApp = window.gdmApp || {};
@@ -19,23 +14,26 @@ window.gdmApp = window.gdmApp || {};
     const app = window.gdmApp;
 
     function getSupabase() {
-        return app.supabase && app.supabaseReady
-            ? app.supabase
-            : null;
+        return app.supabase && app.supabaseReady ? app.supabase : null;
     }
 
     function getRole() {
         const user = app.currentUser || app.supabaseUser || {};
-        return String(
-            user.role ||
-            user.user_role ||
-            user.profile?.role ||
-            user.user_metadata?.role ||
-            "viewer"
-        )
-            .trim()
-            .toLowerCase()
-            .replace(/[\s-]+/g, "_");
+        const rawRole = user.role || user.user_role || user.profile?.role || user.user_metadata?.role || "viewer";
+
+        if (typeof app.normalizeRole === "function") {
+            return app.normalizeRole(rawRole);
+        }
+
+        return String(rawRole).trim().toLowerCase().replace(/[\s-]+/g, "_");
+    }
+
+    function getRoleLabel() {
+        const role = getRole();
+        if (typeof app.getRoleLabel === "function") {
+            return app.getRoleLabel(role);
+        }
+        return role.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
     }
 
     function setText(id, value) {
@@ -48,7 +46,7 @@ window.gdmApp = window.gdmApp || {};
             .replace(/&/g, "&amp;")
             .replace(/</g, "&lt;")
             .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
+            .replace(/\"/g, "&quot;")
             .replace(/'/g, "&#039;");
     }
 
@@ -80,7 +78,7 @@ window.gdmApp = window.gdmApp || {};
         setText("pendingTasksCount", pendingTasks.length);
         setText("reportSubmissionCount", reports.length);
         setText("memberCount", people.length);
-        setText("overviewRoleLabel", getRole().replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()));
+        setText("overviewRoleLabel", getRoleLabel());
 
         renderMiniCards(ministries);
     }
