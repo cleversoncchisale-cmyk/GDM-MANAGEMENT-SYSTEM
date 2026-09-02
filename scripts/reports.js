@@ -21,7 +21,7 @@ window.gdmApp = window.gdmApp || {};
         const client=db();if(!client)return [];
         const session=await waitForSession();
         if(!session?.user){app.reports=[];render([]);return [];}
-        const {data,error}=await client.from("reports").select("*").order("submitted_at",{ascending:false});
+        const {data,error}=await client.from("reports").select("*").order("created_at",{ascending:false});
         if(error){console.error("Reports load failed:",error);notify("Unable to load reports: "+error.message,"error");return [];}
         app.reports=data||[];render(app.reports);return app.reports;
     }
