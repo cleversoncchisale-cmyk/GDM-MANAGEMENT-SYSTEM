@@ -31,7 +31,7 @@ window.gdmApp = window.gdmApp || {};
             render([]);
             return [];
         }
-        const {data,error}=await client.from("documents").select("*").eq("is_active",true).order("created_at",{ascending:false});
+        const {data,error}=await client.from("documents").select("*").order("created_at",{ascending:false});
         if(error){console.error("Documents load failed:",error);notify("Unable to load documents: "+error.message,"error");return [];}
         app.documents=data||[]; render(app.documents); return app.documents;
     }
@@ -63,7 +63,7 @@ window.gdmApp = window.gdmApp || {};
         const up=await client.storage.from(BUCKET).upload(path,file,{upsert:false});
         if(up.error){if(progress)progress.classList.add("hidden");notify("Upload failed: "+up.error.message,"error");return;}
         if(progress)progress.value=80;
-        const row={file_size:file.size,ministry_id:ministryId,department_id:departmentId,uploaded_by:uid,is_public:false,is_active:true,file_path:path};
+        const row={file_size:file.size,ministry_id:ministryId,department_id:departmentId,uploaded_by:uid,is_public:false,file_path:path};
         const ins=await client.from("documents").insert(row).select("*").single();
         if(ins.error){await client.storage.from(BUCKET).remove([path]);if(progress)progress.classList.add("hidden");notify("Document record failed: "+ins.error.message,"error");return;}
         if(progress){progress.value=100;setTimeout(()=>progress.classList.add("hidden"),500);} notify("Document uploaded successfully.","success"); await loadDocuments();
