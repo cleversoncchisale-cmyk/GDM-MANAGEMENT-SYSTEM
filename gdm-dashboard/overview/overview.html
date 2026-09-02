@@ -1,22 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
-<head> <link rel="icon" href="data:,">
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+  <link rel="icon" href="data:,">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GDM Dashboard Overview</title>
-  <link rel="stylesheet" href="../../style.css" />
+  <link rel="stylesheet" href="../../style.css">
 </head>
 <body>
   <div class="page-shell">
     <header class="page-header">
       <div class="header-brand">
-        <a href="../../index.html">Home</a>
-        <span> / </span>
-        <strong>Overview</strong>
+        <a href="../../index.html">Home</a><span> / </span><strong>Overview</strong>
       </div>
       <nav class="header-nav">
         <a class="nav-item" href="../ministries/ministries.html">Ministries</a>
         <a class="nav-item" href="../members/members.html">Members</a>
+        <a class="nav-item" href="../tasks/tasks.html">Tasks</a>
       </nav>
     </header>
 
@@ -30,47 +30,17 @@
             <span class="badge badge-success">Live updates</span>
             <span class="badge badge-soft">Role: <strong id="overviewRoleLabel">Viewer</strong></span>
           </div>
-          <p id="overviewAdminHint" class="section-note">Use the sidebar to manage reports, members, and ministry updates.</p>
         </div>
         <div class="hero-stats">
-          <div>
-    <span class="eyebrow">Active ministries</span>
-    <strong id="ministryCount">0</strong>
-</div>
-
-<div>
-    <span class="eyebrow">Pending tasks</span>
-    <strong id="pendingTasksCount">0</strong>
-</div>
-
-<div>
-    <span class="eyebrow">Reports submitted</span>
-    <strong id="reportSubmissionCount">0</strong>
-</div>
-
-<div>
-    <span class="eyebrow">Team members</span>
-    <strong id="memberCount">0</strong>
-</div>
-        <article class="stat-card">
-          <div class="number">2.4K</div>
-          <div class="label">Active volunteers</div>
-        </article>
-        <article class="stat-card">
-          <div class="number">18</div>
-          <div class="label">Ministry teams</div>
-        </article>
-        <article class="stat-card">
-          <div class="number">1.7K</div>
-          <div class="label">Community members reached</div>
-        </article>
+          <div><span class="eyebrow">Active ministries</span><strong id="ministryCount">0</strong></div>
+          <div><span class="eyebrow">Pending tasks</span><strong id="pendingTasksCount">0</strong></div>
+          <div><span class="eyebrow">Reports submitted</span><strong id="reportSubmissionCount">0</strong></div>
+          <div><span class="eyebrow">Team members</span><strong id="memberCount">0</strong></div>
+        </div>
       </section>
 
       <section class="panel glass-panel analytics-panel">
-        <div class="section-header">
-          <h2>Monthly engagement</h2>
-          <span class="eyebrow">Live chart</span>
-        </div>
+        <div class="section-header"><h2>Monthly engagement</h2><span class="eyebrow">Live chart</span></div>
         <canvas id="reportChart" width="600" height="260"></canvas>
       </section>
 
@@ -79,34 +49,22 @@
           <h3>Ministry progress</h3>
           <div id="miniCards" class="mini-cards"></div>
         </div>
-
         <div class="panel-block">
           <h3>Latest notifications</h3>
-          <ul id="notificationList" class="notification-list">
-            <li class="notification-item"><strong>Live sync ready</strong><div>The dashboard is now connected to real-time updates.</div></li>
-            <li class="notification-item"><strong>New report available</strong><div>Monthly impact data is ready for review.</div></li>
-            <li class="notification-item"><strong>Reminder</strong><div>Youth outreach training starts next week.</div></li>
-          </ul>
+          <ul id="notificationList" class="notification-list"></ul>
         </div>
       </section>
     </main>
   </div>
 
-  <!-- Firebase Libraries -->
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <div id="toastStack" class="toast-stack"></div>
 
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-
-
-<!-- GDM Application Scripts -->
-<script src="../../js/firebase.js"></script>
-<script src="../../scripts/auth.js"></script>
-<script src="../../scripts/firestore.js"></script>
-<script src="../../scripts/dashboard.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../../js/supabase.js"></script>
+  <script src="../../scripts/auth.js"></script>
+  <script src="../../scripts/dashboard.js"></script>
+  <script src="../../scripts/notifications.js"></script>
+  <script src="../../scripts/ministries.js"></script>
+  <script src="../../scripts/overview.js"></script>
 </body>
 </html>
-

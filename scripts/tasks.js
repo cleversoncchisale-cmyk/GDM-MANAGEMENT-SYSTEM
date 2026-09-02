@@ -1,1869 +1,205 @@
-// =====================================================
-// GDM TASK MANAGEMENT
-// =====================================================
+/* =====================================================
+   GDM TASK MANAGEMENT — SUPABASE
+   Database table: tasks
+   Status: pending | in_progress | completed
+   Priority: low | medium | high | none
+   Progress: 0–100
 
-const taskState = {
-    tasks: [],
-    members: [],
-    ministries: [],
-    currentUser: null
-};
+   Verified database relationships:
+   assigned_to  -> people.id
+   created_by   -> profiles.id
+   ministry_id  -> ministries.id
+   department_id -> departments.id
+===================================================== */
 
+window.gdmApp = window.gdmApp || {};
 
-// =====================================================
-// LOAD CURRENT USER
-// =====================================================
+(function () {
+    "use strict";
 
-function getTaskUser() {
+    const app = window.gdmApp;
+    const state = { tasks: [], people: [], profiles: [], ministries: [], departments: [], currentUser: null };
+    const STATUS = ["pending", "in_progress", "completed"];
+    const PRIORITIES = ["low", "medium", "high", "none"];
 
-    try {
+    function db() { return app.supabase || null; }
+    function user() { return app.currentUser || app.supabaseUser || getStoredUser(); }
+    function getStoredUser() { try { return JSON.parse(localStorage.getItem("gdmCurrentUser") || "null"); } catch (_) { return null; } }
+    function uid() { return user()?.id || user()?.uid || null; }
+    function esc(v) { return String(v ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;").replace(/'/g,"&#039;"); }
+    function dateValue(v) { if (!v) return null; const d = new Date(v); return Number.isNaN(d.getTime()) ? null : d; }
+    function dateText(v) { const d = dateValue(v); return d ? d.toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric"}) : "-"; }
+    function statusLabel(v) { return String(v || "pending").replace(/_/g," ").replace(/\b\w/g,m=>m.toUpperCase()); }
+    function priorityOrder(v) { return ({high:1,medium:2,low:3,none:4})[v] || 5; }
+    function completed(t) { return t.status === "completed"; }
+    function progress(t) { return Math.max(0, Math.min(100, Number(t.progress) || 0)); }
+    function show(message,type="info") { if (typeof app.showToast === "function") app.showToast(message,type); else console.log(message); }
 
-        const storedUser =
-            localStorage.getItem("gdmCurrentUser");
-
-        if (storedUser) {
-            return JSON.parse(storedUser);
+    async function waitForAuthenticatedUser(timeoutMs = 10000) {
+        const started = Date.now();
+        while (!user() && Date.now() - started < timeoutMs) {
+            await new Promise(resolve => setTimeout(resolve, 100));
         }
-
-    } catch (error) {
-
-        console.error(
-            "Unable to load current user:",
-            error
-        );
-
+        state.currentUser = user();
+        return state.currentUser;
     }
 
-    return null;
-}
-
-
-// =====================================================
-// ESCAPE TEXT
-// =====================================================
-
-function escapeTaskText(value) {
-
-    if (value === null || value === undefined) {
-        return "";
+    async function loadPeople() {
+        const client=db(); if (!client) return;
+        const {data,error}=await client.from("people").select("*").order("created_at",{ascending:true});
+        if (error) { console.warn("People query failed:",error.message); return; }
+        state.people=data||[];
     }
 
-    return String(value)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
-
-
-// =====================================================
-// LOAD TASKS
-// =====================================================
-
-async function loadTasks() {
-
-    try {
-
-        const db =
-            firebase.firestore();
-
-        const snapshot =
-            await db
-                .collection("tasks")
-                .get();
-
-        taskState.tasks =
-            snapshot.docs.map(doc => ({
-
-                id: doc.id,
-
-                ...doc.data()
-
-            }));
-
-        console.log(
-            "GDM Tasks Loaded:",
-            taskState.tasks
-        );
-
-        renderTaskStatistics();
-
-        renderTasks();
-
+    async function loadProfiles() {
+        const client=db(); if (!client) return;
+        const {data,error}=await client.from("profiles").select("id,full_name,display_name,email,role").order("full_name",{ascending:true});
+        if (error) { console.warn("Profiles query failed:",error.message); return; }
+        state.profiles=data||[];
     }
 
-    catch (error) {
-
-        console.error(
-            "Failed to load tasks:",
-            error
-        );
-
+    async function loadMinistries() {
+        const client=db(); if (!client) return;
+        const {data,error}=await client.from("ministries").select("*").order("created_at",{ascending:true});
+        if (error) { console.warn("Ministries query failed:",error.message); return; }
+        state.ministries=data||[];
     }
 
-}
-
-
-// =====================================================
-// LOAD MEMBERS
-// =====================================================
-
-async function loadTaskMembers() {
-
-    try {
-
-        const db =
-            firebase.firestore();
-
-        const snapshot =
-            await db
-                .collection("members")
-                .get();
-
-        taskState.members =
-            snapshot.docs.map(doc => ({
-
-                id: doc.id,
-
-                ...doc.data()
-
-            }));
-
-        console.log(
-            "GDM Task Members Loaded:",
-            taskState.members
-        );
-
+    async function loadDepartments() {
+        const client=db(); if (!client) return;
+        const {data,error}=await client.from("departments").select("*").order("created_at",{ascending:true});
+        if (error) { console.warn("Departments query failed:",error.message); return; }
+        state.departments=data||[];
     }
 
-    catch (error) {
-
-        console.error(
-            "Failed to load members:",
-            error
-        );
-
+    async function loadTasks() {
+        const client=db();
+        if (!client) { show("Supabase is not available.","error"); return; }
+        const {data,error}=await client.from("tasks").select("*").order("created_at",{ascending:false});
+        if (error) { console.error("Tasks query failed:",error); show("Unable to load tasks: " + error.message,"error"); return; }
+        state.tasks=data||[];
+        render();
     }
 
-}
-
-
-// =====================================================
-// LOAD MINISTRIES
-// =====================================================
-
-async function loadTaskMinistries() {
-
-    try {
-
-        const db =
-            firebase.firestore();
-
-        const snapshot =
-            await db
-                .collection("ministries")
-                .get();
-
-        taskState.ministries =
-            snapshot.docs.map(doc => ({
-
-                id: doc.id,
-
-                ...doc.data()
-
-            }));
-
-        console.log(
-            "GDM Task Ministries Loaded:",
-            taskState.ministries
-        );
-
+    function personName(id) {
+        const p=state.people.find(x=>x.id===id);
+        return p?.full_name || p?.name || p?.display_name || p?.email || null;
     }
 
-    catch (error) {
-
-        console.error(
-            "Failed to load ministries:",
-            error
-        );
-
+    function profileName(id) {
+        const p=state.profiles.find(x=>x.id===id);
+        return p?.full_name || p?.display_name || p?.email || null;
     }
 
-}
-
-
-// =====================================================
-// DATE HELPER
-// =====================================================
-
-function taskDate(value) {
-
-    if (!value) {
-        return null;
+    function ministryName(id) {
+        const m=state.ministries.find(x=>x.id===id);
+        return m?.name || m?.title || null;
     }
 
-    if (
-        value &&
-        typeof value.toDate === "function"
-    ) {
-
-        return value.toDate();
-
+    function departmentName(id) {
+        const d=state.departments.find(x=>x.id===id);
+        return d?.name || d?.title || null;
     }
 
-    const date =
-        new Date(value);
-
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
-
-        return null;
-
+    function renderStats(tasks) {
+        const mine=uid() ? tasks.filter(t=>t.assigned_to===uid()).length : 0;
+        const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+        set("allTasksCount",tasks.length);
+        set("myTasksCount",mine);
+        set("pendingTasksCount",tasks.filter(t=>t.status==="pending").length);
+        set("inProgressTasksCount",tasks.filter(t=>t.status==="in_progress").length);
+        set("completedTasksCount",tasks.filter(completed).length);
     }
 
-    return date;
-
-}
-
-
-// =====================================================
-// AUTOMATIC PROGRESS
-// =====================================================
-
-function getAutomaticProgress(task) {
-
-    const status =
-        String(
-            task.status || "Pending"
-        ).toLowerCase();
-
-    if (
-        status === "completed" ||
-        status === "complete" ||
-        status === "done"
-    ) {
-
-        return 100;
-
+    function render() {
+        const body=document.getElementById("tasksTableBody"); if (!body) return;
+        const filter=document.getElementById("taskFilter")?.value || "all";
+        let tasks=[...state.tasks];
+        if(filter==="my") tasks=tasks.filter(t=>t.assigned_to===uid());
+        if(STATUS.includes(filter)) tasks=tasks.filter(t=>t.status===filter);
+        renderStats(state.tasks);
+        tasks.sort((a,b)=>priorityOrder(a.priority)-priorityOrder(b.priority));
+        if(!tasks.length){ body.innerHTML='<tr><td colspan="7">No tasks available.</td></tr>'; return; }
+        body.innerHTML=tasks.map(t=>{
+            const p=progress(t);
+            const assigned=personName(t.assigned_to) || t.assigned_to || "Unassigned";
+            const ministry=ministryName(t.ministry_id) || t.ministry || "-";
+            const start=dateText(t.start_date);
+            const s=STATUS.includes(t.status)?t.status:"pending";
+            return `<tr><td><strong>${esc(t.title || "Untitled task")}</strong><div>${esc(t.description || "")}</div></td><td>${esc(assigned)}</td><td>${esc(ministry)}</td><td>${start}</td><td><select class="task-status-select" data-task-id="${esc(t.id)}">${STATUS.map(x=>`<option value="${x}" ${x===s?"selected":""}>${statusLabel(x)}</option>`).join("")}</select></td><td><strong>${p}%</strong></td><td><button type="button" class="ghost-btn task-view-btn" data-task-id="${esc(t.id)}">View</button> <button type="button" class="secondary-btn task-edit-btn" data-task-id="${esc(t.id)}">Edit</button> <button type="button" class="ghost-btn task-delete-btn" data-task-id="${esc(t.id)}">Delete</button></td></tr>`;
+        }).join("");
     }
 
-    if (
-        status === "in progress" ||
-        status === "in-progress" ||
-        status === "working"
-    ) {
-
-        return 50;
-
+    async function updateTask(id, patch) {
+        const client=db(); if(!client) return false;
+        const {data,error}=await client.from("tasks").update(patch).eq("id",id).select("*").single();
+        if(error){console.error("Task update failed:",error);show("Could not update task: "+error.message,"error");return false;}
+        const i=state.tasks.findIndex(t=>t.id===id); if(i>=0) state.tasks[i]=data; render(); return true;
     }
 
-    return 0;
-
-}
-
-
-// =====================================================
-// COMPLETED
-// =====================================================
-
-function isTaskCompleted(task) {
-
-    const status =
-        String(
-            task.status || ""
-        ).toLowerCase();
-
-    return (
-
-        status === "completed" ||
-        status === "complete" ||
-        status === "done"
-
-    );
-
-}
-
-
-// =====================================================
-// OVERDUE
-// =====================================================
-
-function isTaskOverdue(task) {
-
-    if (
-        isTaskCompleted(task)
-    ) {
-
-        return false;
-
+    async function deleteTask(id) {
+        if(!confirm("Delete this task?")) return;
+        const client=db(); if(!client) return;
+        const {error}=await client.from("tasks").delete().eq("id",id);
+        if(error){console.error("Task delete failed:",error);show("Could not delete task: "+error.message,"error");return;}
+        state.tasks=state.tasks.filter(t=>t.id!==id); render(); show("Task deleted.","success");
     }
 
-    const dueDate =
-        taskDate(
-            task.dueDate
-        );
-
-    if (!dueDate) {
-        return false;
+    function createTaskForm() {
+        if(document.getElementById("taskFormOverlay")) return;
+        const overlay=document.createElement("div"); overlay.id="taskFormOverlay";
+        overlay.innerHTML=`<div class="panel glass-panel" style="position:fixed;inset:50% auto auto 50%;transform:translate(-50%,-50%);width:min(650px,92vw);max-height:90vh;overflow:auto;z-index:9999;padding:25px"><div class="section-header"><div><p class="eyebrow">Task Management</p><h2>Assign New Task</h2></div><button type="button" id="closeTaskFormButton" class="ghost-btn">×</button></div><form id="taskForm"><label>Task Title<input id="taskTitle" required type="text" placeholder="Enter task title"></label><label>Description<textarea id="taskDescription" rows="4" placeholder="Describe the task"></textarea></label><label>Assign To<select id="taskAssignedTo"><option value="">Unassigned</option>${state.people.map(p=>`<option value="${esc(p.id)}">${esc(p.full_name||p.name||p.display_name||p.email)}</option>`).join("")}</select></label><label>Ministry<select id="taskMinistry"><option value="">No ministry</option>${state.ministries.map(m=>`<option value="${esc(m.id)}">${esc(m.name||m.title)}</option>`).join("")}</select></label><label>Department<select id="taskDepartment"><option value="">No department</option>${state.departments.map(d=>`<option value="${esc(d.id)}">${esc(d.name||d.title)}</option>`).join("")}</select></label><label>Priority<select id="taskPriority">${PRIORITIES.map(x=>`<option value="${x}" ${x==="medium"?"selected":""}>${statusLabel(x)}</option>`).join("")}</select></label><label>Start Date<input id="taskStartDate" type="date"></label><div class="form-actions"><button class="primary-btn" type="submit">Create Task</button><button class="ghost-btn" type="button" id="cancelTaskButton">Cancel</button></div></form></div>`;
+        document.body.appendChild(overlay);
+        const close=()=>overlay.remove(); overlay.querySelector("#closeTaskFormButton").onclick=close; overlay.querySelector("#cancelTaskButton").onclick=close;
+        overlay.querySelector("#taskForm").addEventListener("submit",async e=>{
+            e.preventDefault(); const creator=uid(); if(!creator){show("Please sign in first.","error");return;}
+            const client=db(); if(!client){show("Supabase is not available.","error");return;}
+            const payload={title:document.getElementById("taskTitle").value.trim(),description:document.getElementById("taskDescription").value.trim()||null,assigned_to:document.getElementById("taskAssignedTo").value||null,created_by:creator,ministry_id:document.getElementById("taskMinistry").value||null,department_id:document.getElementById("taskDepartment").value||null,priority:document.getElementById("taskPriority").value,status:"pending",progress:0,start_date:document.getElementById("taskStartDate").value||null};
+            const {data,error}=await client.from("tasks").insert(payload).select("*").single();
+            if(error){console.error("Task creation failed:",error);show("Could not create task: "+error.message,"error");return;}
+            state.tasks.unshift(data); close(); render(); show("Task created successfully.","success");
+        });
     }
 
-    return (
-        dueDate < new Date()
-    );
-
-}
-
-
-// =====================================================
-// UPCOMING
-// =====================================================
-
-function isTaskUpcoming(task) {
-
-    if (
-        isTaskCompleted(task)
-    ) {
-
-        return false;
-
+    function viewTask(id) {
+        const t=state.tasks.find(x=>x.id===id); if(!t)return;
+        const assigned=personName(t.assigned_to)||t.assigned_to||"Unassigned";
+        const creator=profileName(t.created_by)||t.created_by||"Unknown";
+        const ministry=ministryName(t.ministry_id)||t.ministry||"-";
+        const department=departmentName(t.department_id)||t.department||"-";
+        alert(`${t.title || "Task"}\n\n${t.description || "No description"}\n\nAssigned to: ${assigned}\nCreated by: ${creator}\nMinistry: ${ministry}\nDepartment: ${department}\nStatus: ${statusLabel(t.status)}\nPriority: ${statusLabel(t.priority)}\nProgress: ${progress(t)}%\nStart date: ${dateText(t.start_date)}`);
     }
 
-    const dueDate =
-        taskDate(
-            task.dueDate
-        );
-
-    if (!dueDate) {
-        return false;
+    function editTask(id) {
+        const t=state.tasks.find(x=>x.id===id); if(!t)return;
+        const nextStatus=prompt("Status (pending, in_progress, completed):",t.status||"pending");
+        if(nextStatus===null)return;
+        if(!STATUS.includes(nextStatus.trim())){show("Invalid status. Use pending, in_progress, or completed.","error");return;}
+        const nextProgress=prompt("Progress (0-100):",String(progress(t)));
+        if(nextProgress===null)return;
+        const value=Number(nextProgress);
+        if(!Number.isInteger(value)||value<0||value>100){show("Progress must be an integer from 0 to 100.","error");return;}
+        updateTask(id,{status:nextStatus.trim(),progress:value});
     }
 
-    return (
-        dueDate >= new Date()
-    );
-
-}
-
-
-// =====================================================
-// DUE TODAY
-// =====================================================
-
-function isTaskDueToday(task) {
-
-    const dueDate =
-        taskDate(
-            task.dueDate
-        );
-
-    if (!dueDate) {
-        return false;
-    }
-
-    const today =
-        new Date();
-
-    return (
-
-        dueDate.getFullYear() ===
-        today.getFullYear() &&
-
-        dueDate.getMonth() ===
-        today.getMonth() &&
-
-        dueDate.getDate() ===
-        today.getDate()
-
-    );
-
-}
-
-
-// =====================================================
-// COUNTER
-// =====================================================
-
-function setTaskCounter(id, value) {
-
-    const element =
-        document.getElementById(id);
-
-    if (element) {
-
-        element.textContent =
-            String(value);
-
-    }
-
-}
-
-
-// =====================================================
-// RENDER STATISTICS
-// =====================================================
-
-function renderTaskStatistics() {
-
-    const tasks =
-        taskState.tasks;
-
-    const currentUser =
-        taskState.currentUser;
-
-    const allTasks =
-        tasks.length;
-
-    const myTasks =
-        currentUser
-            ?
-            tasks.filter(task => {
-
-                return (
-
-                    task.assignedTo ===
-                    currentUser.uid ||
-
-                    task.assignedTo ===
-                    currentUser.email ||
-
-                    task.assignedTo ===
-                    currentUser.displayName
-
-                );
-
-            }).length
-            :
-            0;
-
-    const dueToday =
-        tasks.filter(
-            isTaskDueToday
-        ).length;
-
-    const overdue =
-        tasks.filter(
-            isTaskOverdue
-        ).length;
-
-    const upcoming =
-        tasks.filter(
-            isTaskUpcoming
-        ).length;
-
-    const completed =
-        tasks.filter(
-            isTaskCompleted
-        ).length;
-
-    setTaskCounter(
-        "allTasksCount",
-        allTasks
-    );
-
-    setTaskCounter(
-        "myTasksCount",
-        myTasks
-    );
-
-    setTaskCounter(
-        "dueTodayCount",
-        dueToday
-    );
-
-    setTaskCounter(
-        "overdueTasksCount",
-        overdue
-    );
-
-    setTaskCounter(
-        "upcomingTasksCount",
-        upcoming
-    );
-
-    setTaskCounter(
-        "completedTasksCount",
-        completed
-    );
-
-}
-
-
-// =====================================================
-// RENDER TASK TABLE
-// =====================================================
-
-function renderTasks() {
-
-    const table =
-        document.getElementById(
-            "tasksTableBody"
-        );
-
-    if (!table) {
-        return;
-    }
-
-    const filter =
-        document.getElementById(
-            "taskFilter"
-        )?.value || "all";
-
-    let tasks =
-        [...taskState.tasks];
-
-
-    // -------------------------------------------------
-    // MY TASKS
-    // -------------------------------------------------
-
-    if (filter === "my") {
-
-        const user =
-            taskState.currentUser;
-
-        if (user) {
-
-            tasks =
-                tasks.filter(task => {
-
-                    return (
-
-                        task.assignedTo ===
-                        user.uid ||
-
-                        task.assignedTo ===
-                        user.email ||
-
-                        task.assignedTo ===
-                        user.displayName
-
-                    );
-
-                });
-
-        }
-
-    }
-
-
-    // -------------------------------------------------
-    // OVERDUE
-    // -------------------------------------------------
-
-    if (filter === "overdue") {
-
-        tasks =
-            tasks.filter(
-                isTaskOverdue
-            );
-
-    }
-
-
-    // -------------------------------------------------
-    // UPCOMING
-    // -------------------------------------------------
-
-    if (filter === "upcoming") {
-
-        tasks =
-            tasks.filter(
-                isTaskUpcoming
-            );
-
-    }
-
-
-    // -------------------------------------------------
-    // COMPLETED
-    // -------------------------------------------------
-
-    if (filter === "completed") {
-
-        tasks =
-            tasks.filter(
-                isTaskCompleted
-            );
-
-    }
-
-
-    table.innerHTML = "";
-
-
-    // -------------------------------------------------
-    // EMPTY
-    // -------------------------------------------------
-
-    if (!tasks.length) {
-
-        table.innerHTML = `
-
-            <tr>
-
-                <td colspan="7">
-
-                    No tasks available.
-
-                </td>
-
-            </tr>
-
-        `;
-
-        return;
-
-    }
-
-
-    // -------------------------------------------------
-    // TASK ROWS
-    // -------------------------------------------------
-
-    tasks.forEach(task => {
-
-        const row =
-            document.createElement("tr");
-
-        const completed =
-            isTaskCompleted(task);
-
-        const overdue =
-            isTaskOverdue(task);
-
-        const dueDate =
-            taskDate(task.dueDate);
-
-        const formattedDate =
-            dueDate
-                ?
-                dueDate.toLocaleDateString()
-                :
-                "-";
-
-
-        let status =
-            String(
-                task.status || "Pending"
-            );
-
-
-        if (completed) {
-
-            status =
-                "Completed";
-
-        }
-
-
-        row.innerHTML = `
-
-            <td>
-
-                <strong>
-
-                    ${
-                        escapeTaskText(
-                            task.title ||
-                            "Untitled task"
-                        )
-                    }
-
-                </strong>
-
-                <div>
-
-                    ${
-                        escapeTaskText(
-                            task.description ||
-                            ""
-                        )
-                    }
-
-                </div>
-
-            </td>
-
-
-            <td>
-
-                ${
-                    escapeTaskText(
-                        task.assignedToName ||
-                        task.assignedTo ||
-                        "-"
-                    )
-                }
-
-            </td>
-
-
-            <td>
-
-                ${
-                    escapeTaskText(
-                        task.ministry ||
-                        "-"
-                    )
-                }
-
-            </td>
-
-
-            <td>
-
-                ${formattedDate}
-
-            </td>
-
-
-            <td>
-
-                <select
-                    class="task-status-select"
-                    data-task-id="${task.id}"
-                >
-
-                    <option
-                        value="Pending"
-                        ${status === "Pending" ? "selected" : ""}
-                    >
-                        Pending
-                    </option>
-
-                    <option
-                        value="In Progress"
-                        ${status === "In Progress" ? "selected" : ""}
-                    >
-                        In Progress
-                    </option>
-
-                    <option
-                        value="Completed"
-                        ${status === "Completed" ? "selected" : ""}
-                    >
-                        Completed
-                    </option>
-
-                </select>
-
-            </td>
-
-
-           <td>
-
-    <strong>
-
-        ${getAutomaticProgress(task)}%
-
-    </strong>
-
-</td>
-
-
-<td>
-
-    <button
-        type="button"
-        class="ghost-btn task-view-btn"
-        data-task-id="${task.id}"
-    >
-        View
-    </button>
-
-
-    <button
-        type="button"
-        class="secondary-btn task-edit-btn"
-        data-task-id="${task.id}"
-    >
-        Edit
-    </button>
-
-
-    <button
-        type="button"
-        class="ghost-btn task-delete-btn"
-        data-task-id="${task.id}"
-    >
-        Delete
-    </button>
-
-</td>
-
-`;
-
-table.appendChild(row);
+    document.addEventListener("DOMContentLoaded",async()=>{
+        await waitForAuthenticatedUser();
+        const u=state.currentUser;
+        const role=(u?.roleLabel || u?.role || "Guest").replace(/_/g," ").replace(/\b\w/g,m=>m.toUpperCase());
+        const rb=document.getElementById("taskRoleBadge"), rl=document.getElementById("taskRoleLabel"); if(rb)rb.textContent=role;if(rl)rl.textContent=role;
+        const filter=document.getElementById("taskFilter"); if(filter)filter.addEventListener("change",render);
+        const add=document.getElementById("addTaskButton"); if(add)add.addEventListener("click",createTaskForm);
+        const logout=document.getElementById("logoutBtn"); if(logout)logout.addEventListener("click",()=>typeof app.signOut==="function"?app.signOut():null);
+        const theme=document.getElementById("themeToggle"); if(theme)theme.addEventListener("click",()=>document.body.classList.toggle("dark-mode"));
+        document.addEventListener("click",async e=>{
+            const view=e.target.closest(".task-view-btn"); if(view)return viewTask(view.dataset.taskId);
+            const edit=e.target.closest(".task-edit-btn"); if(edit)return editTask(edit.dataset.taskId);
+            const del=e.target.closest(".task-delete-btn"); if(del)return deleteTask(del.dataset.taskId);
+        });
+        document.addEventListener("change",async e=>{ const status=e.target.closest(".task-status-select"); if(!status)return; const value=status.value; const patch={status:value}; if(value==="completed")patch.progress=100; await updateTask(status.dataset.taskId,patch); });
+        await Promise.all([loadPeople(),loadProfiles(),loadMinistries(),loadDepartments()]);
+        await loadTasks();
     });
 
-}
-
-
-// =====================================================
-// CREATE TASK FORM
-// =====================================================
-
-function createTaskForm() {
-
-    if (
-        document.getElementById(
-            "taskFormOverlay"
-        )
-    ) {
-
-        return;
-
-    }
-
-
-    const overlay =
-        document.createElement("div");
-
-    overlay.id =
-        "taskFormOverlay";
-
-    overlay.innerHTML = `
-
-        <div
-            class="panel glass-panel"
-            style="
-                position:fixed;
-                inset:50% auto auto 50%;
-                transform:translate(-50%, -50%);
-                width:min(650px, 92vw);
-                max-height:90vh;
-                overflow-y:auto;
-                z-index:9999;
-                padding:25px;
-            "
-        >
-
-            <div class="section-header">
-
-                <div>
-
-                    <p class="eyebrow">
-                        Task Management
-                    </p>
-
-                    <h2>
-                        Assign New Task
-                    </h2>
-
-                </div>
-
-                <button
-                    type="button"
-                    id="closeTaskFormButton"
-                    class="ghost-btn"
-                >
-                    ×
-                </button>
-
-            </div>
-
-
-            <form id="taskForm">
-
-
-                <label style="display:block;margin-bottom:15px;">
-
-                    Task Title
-
-                    <input
-                        id="taskTitle"
-                        type="text"
-                        required
-                        placeholder="Enter task title"
-                        style="width:100%;padding:10px;margin-top:6px;"
-                    >
-
-                </label>
-
-
-                <label style="display:block;margin-bottom:15px;">
-
-                    Description
-
-                    <textarea
-                        id="taskDescription"
-                        rows="4"
-                        placeholder="Describe the task"
-                        style="width:100%;padding:10px;margin-top:6px;"
-                    ></textarea>
-
-                </label>
-
-
-                <label style="display:block;margin-bottom:15px;">
-
-                    Assign To
-
-                    <select
-                        id="taskAssignedTo"
-                        required
-                        style="width:100%;padding:10px;margin-top:6px;"
-                    >
-
-                        <option value="">
-                            Select member
-                        </option>
-
-                    </select>
-
-                </label>
-
-
-                <label style="display:block;margin-bottom:15px;">
-
-                    Ministry
-
-                    <select
-                        id="taskMinistry"
-                        required
-                        style="width:100%;padding:10px;margin-top:6px;"
-                    >
-
-                        <option value="">
-                            Select ministry
-                        </option>
-
-                    </select>
-
-                </label>
-
-
-                <label style="display:block;margin-bottom:15px;">
-
-                    Due Date
-
-                    <input
-                        id="taskDueDate"
-                        type="date"
-                        required
-                        style="width:100%;padding:10px;margin-top:6px;"
-                    >
-
-                </label>
-
-
-                <div class="form-actions">
-
-                    <button
-                        type="submit"
-                        class="primary-btn"
-                    >
-                        Save Task
-                    </button>
-
-
-                    <button
-                        type="button"
-                        id="cancelTaskFormButton"
-                        class="ghost-btn"
-                    >
-                        Cancel
-                    </button>
-
-                </div>
-
-
-            </form>
-
-        </div>
-
-    `;
-
-
-    document.body.appendChild(
-        overlay
-    );
-
-
-    // -------------------------------------------------
-    // MEMBER OPTIONS
-    // -------------------------------------------------
-
-    const memberSelect =
-        document.getElementById(
-            "taskAssignedTo"
-        );
-
-
-    taskState.members.forEach(member => {
-
-        const option =
-            document.createElement("option");
-
-        const name =
-            member.name ||
-            member.fullName ||
-            member.displayName ||
-            member.email ||
-            "Unnamed member";
-
-        option.value =
-            member.uid ||
-            member.id ||
-            member.email ||
-            "";
-
-        option.textContent =
-            name;
-
-        option.dataset.name =
-            name;
-
-        memberSelect.appendChild(
-            option
-        );
-
-    });
-
-
-    // -------------------------------------------------
-    // MINISTRY OPTIONS
-    // -------------------------------------------------
-
-    const ministrySelect =
-        document.getElementById(
-            "taskMinistry"
-        );
-
-
-    taskState.ministries.forEach(ministry => {
-
-        const option =
-            document.createElement("option");
-
-        const name =
-            ministry.name ||
-            ministry.title ||
-            ministry.ministryName ||
-            ministry.id ||
-            "Unnamed ministry";
-
-        option.value =
-            name;
-
-        option.textContent =
-            name;
-
-        ministrySelect.appendChild(
-            option
-        );
-
-    });
-
-
-    // -------------------------------------------------
-    // EVENTS
-    // -------------------------------------------------
-
-    document
-        .getElementById(
-            "taskForm"
-        )
-        .addEventListener(
-            "submit",
-            saveNewTask
-        );
-
-
-    document
-        .getElementById(
-            "closeTaskFormButton"
-        )
-        .addEventListener(
-            "click",
-            closeTaskForm
-        );
-
-
-    document
-        .getElementById(
-            "cancelTaskFormButton"
-        )
-        .addEventListener(
-            "click",
-            closeTaskForm
-        );
-
-}
-
-
-// =====================================================
-// OPEN TASK FORM
-// =====================================================
-
-function openTaskForm() {
-
-    createTaskForm();
-
-    const overlay =
-        document.getElementById(
-            "taskFormOverlay"
-        );
-
-    if (overlay) {
-
-        overlay.style.display =
-            "block";
-
-    }
-
-}
-
-
-// =====================================================
-// CLOSE TASK FORM
-// =====================================================
-
-function closeTaskForm() {
-
-    const overlay =
-        document.getElementById(
-            "taskFormOverlay"
-        );
-
-    if (overlay) {
-
-        overlay.remove();
-
-    }
-
-}
-
-
-// =====================================================
-// SAVE NEW TASK
-// =====================================================
-
-async function saveNewTask(event) {
-
-    event.preventDefault();
-
-
-    try {
-
-        const db =
-            firebase.firestore();
-
-
-        const title =
-            document.getElementById(
-                "taskTitle"
-            ).value.trim();
-
-
-        const description =
-            document.getElementById(
-                "taskDescription"
-            ).value.trim();
-
-
-        const assignedSelect =
-            document.getElementById(
-                "taskAssignedTo"
-            );
-
-
-        const ministry =
-            document.getElementById(
-                "taskMinistry"
-            ).value;
-
-
-        const dueDate =
-            document.getElementById(
-                "taskDueDate"
-            ).value;
-
-
-        const assignedTo =
-            assignedSelect.value;
-
-
-        const assignedOption =
-            assignedSelect.options[
-                assignedSelect.selectedIndex
-            ];
-
-
-        const assignedToName =
-            assignedOption?.dataset?.name ||
-            assignedOption?.textContent ||
-            assignedTo;
-
-
-        if (!title) {
-
-            alert(
-                "Please enter a task title."
-            );
-
-            return;
-
-        }
-
-
-        if (!assignedTo) {
-
-            alert(
-                "Please select a member."
-            );
-
-            return;
-
-        }
-
-
-        if (!ministry) {
-
-            alert(
-                "Please select a ministry."
-            );
-
-            return;
-
-        }
-
-
-        if (!dueDate) {
-
-            alert(
-                "Please select a due date."
-            );
-
-            return;
-
-        }
-
-
-        const currentUser =
-            taskState.currentUser;
-
-
-        const task = {
-
-            title: title,
-
-            description: description,
-
-            assignedTo: assignedTo,
-
-            assignedToName: assignedToName,
-
-            ministry: ministry,
-
-            dueDate: dueDate,
-
-            status: "Pending",
-
-            progress: 0,
-
-            createdBy:
-                currentUser?.uid ||
-                currentUser?.email ||
-                "unknown",
-
-            createdByName:
-                currentUser?.displayName ||
-                currentUser?.email ||
-                "Admin",
-
-            createdAt:
-                firebase.firestore
-                    .FieldValue
-                    .serverTimestamp(),
-
-            updatedAt:
-                firebase.firestore
-                    .FieldValue
-                    .serverTimestamp()
-
-        };
-
-
-        await db
-            .collection("tasks")
-            .add(task);
-
-
-        alert(
-            "Task assigned successfully."
-        );
-
-
-        closeTaskForm();
-
-
-        await loadTasks();
-
-    }
-
-    catch (error) {
-
-        console.error(
-            "Failed to create task:",
-            error
-        );
-
-
-        alert(
-            "Unable to assign task: " +
-            error.message
-        );
-
-    }
-
-}
-
-
-// =====================================================
-// UPDATE TASK STATUS
-// =====================================================
-
-async function updateTaskStatus(
-    taskId,
-    newStatus
-) {
-
-    try {
-
-        const db =
-            firebase.firestore();
-
-
-        const progress =
-            getAutomaticProgress({
-                status: newStatus
-            });
-
-
-        await db
-            .collection("tasks")
-            .doc(taskId)
-            .update({
-
-                status: newStatus,
-
-                progress: progress,
-
-                updatedAt:
-                    firebase.firestore
-                        .FieldValue
-                        .serverTimestamp()
-
-            });
-
-
-        const task =
-            taskState.tasks.find(
-                item =>
-                    item.id === taskId
-            );
-
-
-        if (task) {
-
-            task.status =
-                newStatus;
-
-            task.progress =
-                progress;
-
-        }
-
-
-        renderTaskStatistics();
-
-        renderTasks();
-
-
-    }
-
-    catch (error) {
-
-        console.error(
-            "Failed to update task status:",
-            error
-        );
-
-
-        alert(
-            "Unable to update task status: " +
-            error.message
-        );
-
-
-        await loadTasks();
-
-    }
-
-}
-
-
-// =====================================================
-// STATUS CHANGE LISTENER
-// =====================================================
-
-document.addEventListener(
-    "change",
-    event => {
-
-        if (
-            event.target &&
-            event.target.classList.contains(
-                "task-status-select"
-            )
-        ) {
-
-            const taskId =
-                event.target.dataset.taskId;
-
-
-            const newStatus =
-                event.target.value;
-
-
-            updateTaskStatus(
-                taskId,
-                newStatus
-            );
-
-        }
-
-
-        if (
-            event.target &&
-            event.target.id ===
-                "taskFilter"
-        ) {
-
-            renderTasks();
-
-        }
-
-    }
-);
-
-
-// =====================================================
-// TASK BUTTONS
-// =====================================================
-
-document.addEventListener(
-    "click",
-    event => {
-
-        // ---------------------------------------------
-        // ASSIGN TASK
-        // ---------------------------------------------
-
-        if (
-            event.target &&
-            event.target.id ===
-                "addTaskButton"
-        ) {
-
-            openTaskForm();
-
-            return;
-
-        }
-
-
-        // ---------------------------------------------
-        // VIEW TASK
-        // ---------------------------------------------
-
-        if (
-            event.target &&
-            event.target.classList.contains(
-                "task-view-btn"
-            )
-        ) {
-
-            const taskId =
-                event.target.dataset.taskId;
-
-            console.log(
-                "View task:",
-                taskId
-            );
-
-            viewTask(taskId);
-
-            return;
-
-        }
-
-// ---------------------------------------------
-// EDIT TASK
-// ---------------------------------------------
-
-if (
-    event.target &&
-    event.target.classList.contains(
-        "task-edit-btn"
-    )
-) {
-
-    const taskId =
-        event.target.dataset.taskId;
-
-    console.log(
-        "Edit task:",
-        taskId
-    );
-
-    editTask(taskId);
-
-    return;
-
-}
-        // ---------------------------------------------
-        // DELETE TASK
-        // ---------------------------------------------
-
-        if (
-            event.target &&
-            event.target.classList.contains(
-                "task-delete-btn"
-            )
-        ) {
-
-            const taskId =
-                event.target.dataset.taskId;
-
-            console.log(
-                "Delete task:",
-                taskId
-            );
-
-            deleteTask(taskId);
-
-            return;
-
-        }
-
-    }
-);
-
-
-// =====================================================
-// VIEW TASK
-// =====================================================
-
-function viewTask(taskId) {
-
-    const task =
-        taskState.tasks.find(
-            item => item.id === taskId
-        );
-
-
-    if (!task) {
-
-        alert(
-            "Task could not be found."
-        );
-
-        return;
-
-    }
-
-
-    const dueDate =
-        taskDate(task.dueDate);
-
-
-    const formattedDate =
-        dueDate
-            ? dueDate.toLocaleDateString()
-            : "-";
-
-
-    alert(
-        "TASK DETAILS\n\n" +
-
-        "Title: " +
-        (task.title || "-") +
-
-        "\n\nDescription: " +
-        (task.description || "-") +
-
-        "\n\nAssigned To: " +
-        (
-            task.assignedToName ||
-            task.assignedTo ||
-            "-"
-        ) +
-
-        "\n\nMinistry: " +
-        (task.ministry || "-") +
-
-        "\n\nDue Date: " +
-        formattedDate +
-
-        "\n\nStatus: " +
-        (task.status || "Pending") +
-
-        "\n\nProgress: " +
-        getAutomaticProgress(task) +
-        "%"
-    );
-
-}
-
-
-// =====================================================
-// DELETE TASK
-// =====================================================
-
-async function deleteTask(taskId) {
-
-    const task =
-        taskState.tasks.find(
-            item => item.id === taskId
-        );
-
-
-    if (!task) {
-
-        alert(
-            "Task could not be found."
-        );
-
-        return;
-
-    }
-
-
-    const confirmed =
-        confirm(
-            "Are you sure you want to delete this task?\n\n" +
-
-            (task.title ||
-             "Untitled task") +
-
-            "\n\nThis action cannot be undone."
-        );
-
-
-    if (!confirmed) {
-
-        return;
-
-    }
-
-
-    try {
-
-        const db =
-            firebase.firestore();
-
-
-        await db
-            .collection("tasks")
-            .doc(taskId)
-            .delete();
-
-
-        alert(
-            "Task deleted successfully."
-        );
-
-
-        await loadTasks();
-
-    }
-
-    catch (error) {
-
-        console.error(
-            "Failed to delete task:",
-            error
-        );
-
-
-        alert(
-            "Unable to delete task: " +
-            error.message
-        );
-
-    }
-
-}
-// =====================================================
-// EDIT TASK
-// =====================================================
-
-function editTask(taskId) {
-
-    const task =
-        taskState.tasks.find(
-            item => item.id === taskId
-        );
-
-    if (!task) {
-
-        alert(
-            "Task could not be found."
-        );
-
-        return;
-
-    }
-
-    const title =
-        prompt(
-            "Edit task title:",
-            task.title || ""
-        );
-
-    if (title === null) {
-        return;
-    }
-
-    const description =
-        prompt(
-            "Edit task description:",
-            task.description || ""
-        );
-
-    if (description === null) {
-        return;
-    }
-
-    const dueDate =
-        prompt(
-            "Edit due date (YYYY-MM-DD):",
-            task.dueDate || ""
-        );
-
-    if (dueDate === null) {
-        return;
-    }
-
-    if (!title.trim()) {
-
-        alert(
-            "Task title cannot be empty."
-        );
-
-        return;
-
-    }
-
-    if (!dueDate.trim()) {
-
-        alert(
-            "Due date cannot be empty."
-        );
-
-        return;
-
-    }
-
-    saveEditedTask(
-        taskId,
-        title.trim(),
-        description.trim(),
-        dueDate.trim()
-    );
-
-}
-
-
-// =====================================================
-// SAVE EDITED TASK
-// =====================================================
-
-async function saveEditedTask(
-    taskId,
-    title,
-    description,
-    dueDate
-) {
-
-    try {
-
-        const db =
-            firebase.firestore();
-
-        await db
-            .collection("tasks")
-            .doc(taskId)
-            .update({
-
-                title: title,
-
-                description: description,
-
-                dueDate: dueDate,
-
-                updatedAt:
-                    firebase.firestore
-                        .FieldValue
-                        .serverTimestamp()
-
-            });
-
-        alert(
-            "Task updated successfully."
-        );
-
-        await loadTasks();
-
-    }
-
-    catch (error) {
-
-        console.error(
-            "Failed to update task:",
-            error
-        );
-
-        alert(
-            "Unable to update task: " +
-            error.message
-        );
-
-    }
-
-}
-
-// =====================================================
-// INITIALIZE
-// =====================================================
-
-document.addEventListener(
-    "DOMContentLoaded",
-    async () => {
-
-        taskState.currentUser =
-            getTaskUser();
-
-
-        await Promise.all([
-
-            loadTaskMembers(),
-
-            loadTaskMinistries(),
-
-            loadTasks()
-
-        ]);
-
-
-        console.log(
-            "GDM Task Management Ready."
-        );
-
-    }
-);
+    app.gdmTasks={state,loadTasks,render,createTaskForm,updateTask,deleteTask};
+})();
